@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Line Sheet — Kitchen Requisitions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0000;
+    --surface: #1E211E;
+    --surface-raised: #262924;
+    --line: #34372F;
+    --text-primary: #EDEBE3;
+    --text-secondary: #9B9C90;
+    --text-dim: #676A5F;
+    --paper: #F4EFE4;
+    --paper-line: #DCD5C2;
+    --flame: #E1512B;
+    --amber: #D9A441;
+    --sage: #7C9A5D;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+  }
+  button, input, select { font-family: inherit; }
+  button { cursor: pointer; }
+  svg { display: block; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---- sidebar ---- */
+  .sidebar { width: 216px; flex-shrink: 0; border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 4px 8px 22px; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 6px; background: var(--flame); display: flex; align-items: center; justify-content: center; color: #1a0d06; flex-shrink: 0; }
+  .brand-name { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 0.4px; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 6px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 500; text-align: left; margin-bottom: 2px; }
+  .nav-item:hover { background: var(--surface-raised); color: var(--text-primary); }
+  .nav-item.is-active { background: var(--surface-raised); color: var(--text-primary); }
+  .nav-item.is-active svg { stroke: var(--flame); }
+  .nav-count { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11px; background: var(--flame); color: #1a0d06; padding: 1px 6px; border-radius: 999px; min-width: 16px; text-align: center; }
+  .nav-count.is-hidden { display: none; }
+  .nav-divider { height: 1px; background: var(--line); margin: 8px 4px 10px; }
+  .sidebar-foot { margin-top: auto; padding: 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
+  .sidebar-foot-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .sidebar-foot-value { font-family: 'Oswald', sans-serif; font-size: 20px; color: var(--flame); }
+  .sidebar-foot-sub { font-size: 11px; color: var(--text-dim); }
+
+  /* ---- main ---- */
+  .main { flex: 1; padding: 28px 32px 60px; max-width: 1220px; position: relative; }
+  .main-head { margin-bottom: 20px; }
+  .title { font-family: 'Oswald', sans-serif; font-size: 23px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.4px; }
+  .subtitle { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; }
+
+  .toast { position: fixed; top: 22px; right: 28px; background: var(--sage); color: #10190a; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 8px; display: flex; align-items: center; gap: 6px; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .toast.is-visible { opacity: 1; }
+
+  .view { display: none; }
+  .view.is-active { display: block; }
+
+  /* ---- alert banner ---- */
+  .alert-banner { display: flex; align-items: center; gap: 8px; background: rgba(225,81,43,0.12); color: #F0866A; border: 1px solid rgba(225,81,43,0.3); font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 8px; margin-bottom: 18px; }
+  .alert-banner.amber { background: rgba(217,164,65,0.12); color: #D9A441; border-color: rgba(217,164,65,0.3); }
+
+  /* ---- panel head / filters ---- */
+  .panel { display: flex; flex-direction: column; gap: 18px; }
+  .panel-head { display: flex; flex-direction: column; gap: 12px; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; color: var(--text-dim); max-width: 320px; }
+  .search input { background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13px; width: 100%; }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cat-chip { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+  .cat-chip.is-selected { border-color: var(--flame); color: var(--text-primary); background: var(--surface-raised); }
+
+  /* ---- item grid + gauge ---- */
+  .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .item-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .item-name { font-size: 14px; font-weight: 600; }
+  .item-supplier { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .gauge { display: flex; flex-direction: column; gap: 6px; }
+  .gauge-track { position: relative; height: 8px; border-radius: 999px; background: var(--surface-raised); overflow: visible; }
+  .gauge-fill { height: 100%; border-radius: 999px; }
+  .gauge-reorder { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--text-dim); }
+  .gauge-labels { display: flex; align-items: baseline; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+  .gauge-labels strong { color: var(--text-primary); font-family: 'IBM Plex Mono', monospace; }
+  .gauge-par { color: var(--text-dim); }
+  .item-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid var(--line); }
+  .item-status { font-size: 12px; font-weight: 600; }
+  .add-btn { display: flex; align-items: center; gap: 4px; background: transparent; border: 1px solid var(--line); color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 5px 9px; border-radius: 999px; }
+  .add-btn:hover { color: var(--flame); border-color: var(--flame); }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--text-dim); padding: 30px 0; }
+
+  /* ---- requisition builder ---- */
+  .req { display: grid; grid-template-columns: 1fr 280px; gap: 28px; align-items: start; }
+  .req-form { display: flex; flex-direction: column; gap: 20px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .hint { font-size: 12px; color: var(--text-dim); margin: 0; }
+  .input { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--text-primary); padding: 9px 12px; font-size: 14px; outline: none; width: 100%; }
+  .input:focus { border-color: var(--flame); }
+
+  .item-picker { display: flex; gap: 8px; }
+  .item-picker .input { flex: 1; }
+  .picker-add-btn { display: flex; align-items: center; gap: 5px; background: var(--surface-raised); border: 1px solid var(--line); color: var(--text-primary); font-size: 13px; font-weight: 500; padding: 0 14px; border-radius: 8px; white-space: nowrap; }
+  .picker-add-btn:hover { border-color: var(--flame); color: var(--flame); }
+  .cart-list { display: flex; flex-direction: column; gap: 8px; }
+  .cart-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .cart-name { font-size: 14px; font-weight: 500; }
+  .cart-supplier { font-size: 11px; color: var(--text-dim); }
+  .stepper { display: flex; align-items: center; gap: 10px; margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  .stepper button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-raised); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
+  .stepper button:hover { color: var(--flame); border-color: var(--flame); }
+  .cart-unit { color: var(--text-dim); }
+  .remove-btn { background: transparent; border: none; color: var(--text-dim); display: flex; }
+  .remove-btn:hover { color: var(--flame); }
+
+  .error { margin: 0; font-size: 13px; color: var(--flame); display: none; }
+  .error.is-visible { display: block; }
+
+  .submit-row { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; gap: 16px; flex-wrap: wrap; }
+  .submit-note { font-size: 12px; color: var(--text-secondary); }
+  .submit-btn { display: flex; align-items: center; gap: 8px; background: var(--flame); color: #1a0d06; border: none; font-size: 14px; font-weight: 600; padding: 11px 20px; border-radius: 8px; }
+  .submit-btn:hover { filter: brightness(1.08); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+  /* ---- ticket (paper) styling — shared by preview + history ---- */
+  .ticket-preview-wrap { position: sticky; top: 20px; }
+  .ticket-preview, .ticket-card {
+    background: var(--paper);
+    color: #2A2620;
+    border-radius: 3px;
+    padding: 16px 16px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    position: relative;
+  }
+  .ticket-card { cursor: pointer; transition: transform 0.15s ease; }
+  .ticket-card:hover { transform: translateY(-2px); }
+  .ticket-perf {
+    position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background-image: radial-gradient(circle, var(--bg) 2.5px, transparent 2.6px);
+    background-size: 14px 6px;
+    background-position: 4px 0;
+  }
+  .ticket-head { display: flex; justify-content: space-between; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #6B6150; border-bottom: 1px dashed var(--paper-line); padding: 8px 0 8px; margin-top: 6px; }
+  .ticket-recipient { font-size: 11px; color: #6B6150; border-bottom: 1px dashed var(--paper-line); padding: 6px 0; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; }
+  .ticket-recipient strong { color: #2A2620; }
+  .ticket-lines { display: flex; flex-direction: column; gap: 5px; padding: 10px 0; }
+  .ticket-line { display: flex; justify-content: space-between; font-size: 13px; gap: 8px; }
+  .ticket-empty { font-size: 12px; color: #8B8265; text-align: center; padding: 10px 0; }
+  .ticket-foot { border-top: 1px dashed var(--paper-line); padding-top: 8px; font-size: 11px; color: #6B6150; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  .pending-tag { font-size: 10px; background: #E1512B; color: #fff; padding: 1px 4px; border-radius: 3px; margin-left: 6px; font-weight: bold; }
+  .fulfilled-tag { font-size: 10px; background: #7C9A5D; color: #fff; padding: 1px 4px; border-radius: 3px; margin-left: 6px; }
+
+  .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .ticket-card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-top: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--paper-line); }
+  .ticket-card-id { font-size: 15px; font-weight: 600; }
+  .ticket-card-meta { font-size: 11px; color: #6B6150; margin-top: 2px; }
+
+  .status-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+
+  /* ---- modal ---- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .modal-overlay.is-open { opacity: 1; pointer-events: auto; }
+  .modal { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 18px; color: var(--text-primary); }
+  .modal-title { font-family: 'Oswald', sans-serif; font-size: 18px; text-transform: uppercase; margin: 0; }
+  .modal-items { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+  .modal-item-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface-raised); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+  .modal-item-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-sec { background: transparent; border: 1px solid var(--line); color: var(--text-secondary); padding: 8px 14px; border-radius: 6px; }
+  .btn-sec:hover { color: var(--text-primary); }
+
+  /* ---- add forms ---- */
+  .form-card { max-width: 560px; display: flex; flex-direction: column; gap: 18px; }
+  .form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .form-row.two { grid-template-columns: repeat(2, 1fr); }
+
+  /* ---- add inventory file (CSV) ---- */
+  .upload-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 16px; }
+  .upload-btn { display: flex; align-items: center; gap: 7px; background: var(--surface-raised); border: 1px solid var(--line); color: var(--text-primary); font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: 8px; }
+  .upload-btn:hover { border-color: var(--flame); color: var(--flame); }
+  .upload-filename { font-size: 12px; color: var(--text-dim); flex: 1; }
+  .link-btn { background: transparent; border: none; color: var(--text-secondary); font-size: 12px; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; padding: 0; }
+  .link-btn:hover { color: var(--flame); }
+  .csv-errors { display: flex; flex-direction: column; gap: 4px; }
+  .csv-errors .error-line { font-size: 12px; color: var(--flame); }
+  .csv-table-wrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .csv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .csv-table th { text-align: left; background: var(--surface-raised); color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; padding: 9px 12px; font-weight: 600; }
+  .csv-table td { padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); }
+  .csv-table tr:nth-child(even) td { background: var(--surface-raised); }
+
+  @media (max-width: 900px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 12px 16px; overflow-x: auto; }
+    .brand { padding: 0; }
+    .nav-divider { display: none; }
+    .sidebar-foot { display: none; }
+    .req { grid-template-columns: 1fr; }
+    .ticket-preview-wrap { position: static; }
+    .field-row, .form-row, .form-row.two { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+      </span>
+      <span class="brand-name">Line Sheet</span>
+    </div>
+
+    <button class="nav-item is-active" data-view="dashboard">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <span>Par levels</span>
+      <span class="nav-count" id="criticalCountNav">0</span>
+    </button>
+    <button class="nav-item" data-view="requisition">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg>
+      <span>New requisition</span>
+      <span class="nav-count is-hidden" id="cartCountNav">0</span>
+    </button>
+    <button class="nav-item" data-view="history">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      <span>History</span>
+    </button>
+
+    <div class="nav-divider"></div>
+
+    <button class="nav-item" data-view="addfile">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9.5 14.5 2.5-2.5 2.5 2.5"/></svg>
+      <span>Add inventory file</span>
+    </button>
+    <button class="nav-item" data-view="addrecipient">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+      <span>Add Recipient Details</span>
+    </button>
+    <button class="nav-item" data-view="addsupplier">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Add Supplier Details</span>
+    </button>
+    <button class="nav-item" data-view="additem">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      <span>Add inventory item</span>
+    </button>
+
+    <div class="sidebar-foot">
+      <div class="sidebar-foot-label">Below reorder</div>
+      <div class="sidebar-foot-value" id="criticalCountFoot">0</div>
+      <div class="sidebar-foot-sub" id="itemTotalFoot">of 0 tracked items</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="toast" id="toast">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <span id="toastText"></span>
+    </div>
+
+    <!-- ===== Par levels view ===== -->
+    <section class="view is-active" id="view-dashboard">
+      <div class="main-head">
+        <h1 class="title">Par levels</h1>
+        <p class="subtitle">What's on hand across every station, checked against par.</p>
+      </div>
+      <div class="panel">
+        <div class="alert-banner" id="alertBanner" style="display:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="alertText"></span>
+        </div>
+        <div class="panel-head">
+          <div class="search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="itemSearch" placeholder="Search inventory" />
+          </div>
+          <div class="chip-row" id="categoryChips"></div>
+        </div>
+        <div class="item-grid" id="itemGrid"></div>
+      </div>
+    </section>
+
+    <!-- ===== New requisition view ===== -->
+    <section class="view" id="view-requisition">
+      <div class="main-head">
+        <h1 class="title">New requisition</h1>
+        <p class="subtitle">Build a request and send it to your suppliers.</p>
+      </div>
+      <div class="req">
+        <div class="req-form">
+          <div class="field">
+            <label class="label">Station</label>
+            <div class="chip-row" id="stationChips"></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="label">Recipient / Lead</label>
+              <select class="input" id="recipientSelect"></select>
+              <select class="input" id="customRecipientInput" style="display:none; margin-top:6px;"></select>
+            </div>
+            <div class="field">
+              <label class="label">Needed by</label>
+              <input type="date" class="input" id="neededByInput" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Items (<span id="cartCountLabel">0</span>)</label>
+            <div class="item-picker">
+              <select class="input" id="itemPicker"></select>
+              <button class="picker-add-btn" id="pickerAddBtn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+                Add
+              </button>
+            </div>
+            <p class="hint" id="cartHint">Nothing added yet. Pick an item above, or add it straight from Par levels.</p>
+            <div class="cart-list" id="cartList"></div>
+          </div>
+          <p class="error" id="reqError"></p>
+          <div class="submit-row">
+            <span class="submit-note" id="submitNote">Pick items to see supplier split</span>
+            <button class="submit-btn" id="submitReq">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+              Submit requisition
+            </button>
+          </div>
+        </div>
+        <div class="ticket-preview-wrap">
+          <div class="ticket-preview">
+            <div class="ticket-perf"></div>
+            <div class="ticket-head">
+              <span>Requisition</span>
+              <span id="previewStation">Proteins</span>
+            </div>
+            <div class="ticket-recipient">
+              <span>Recipient</span>
+              <strong id="previewRecipient">Marcus T.</strong>
+            </div>
+            <div class="ticket-lines" id="previewLines">
+              <div class="ticket-empty">— no items yet —</div>
+            </div>
+            <div class="ticket-foot" id="previewFoot">Needed-by not set</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== History view ===== -->
+    <section class="view" id="view-history">
+      <div class="main-head">
+        <h1 class="title">History</h1>
+        <p class="subtitle">Requisitions submitted by your kitchen. Click any ticket to update its status.</p>
+      </div>
+      <div class="panel">
+        <div class="alert-banner amber" id="reminderBanner" style="display:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="reminderText"></span>
+        </div>
+        <div class="ticket-grid" id="ticketGrid"></div>
+      </div>
+    </section>
+
+    <!-- ===== Add inventory file (CSV) view ===== -->
+    <section class="view" id="view-addfile">
+      <div class="main-head">
+        <h1 class="title">Add inventory file</h1>
+        <p class="subtitle">Import items in bulk from a CSV file.</p>
+      </div>
+      <div class="panel">
+        <div class="upload-card">
+          <input type="file" id="csvFileInput" accept=".csv,text/csv" hidden />
+          <button class="upload-btn" id="csvChooseBtn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            Choose CSV file
+          </button>
+          <span class="upload-filename" id="csvFileName">No file selected</span>
+          <button class="link-btn" id="downloadTemplateBtn" type="button">Download template</button>
+        </div>
+        <p class="hint">Columns, in any order: name, category, unit, current, par, reorder, supplier. Category should match Proteins, Bar, Spices, Dry Items, Vegetables, or Packaging.</p>
+
+        <div class="csv-errors" id="csvErrors"></div>
+
+        <div id="csvPreviewWrap" style="display:none;">
+          <div class="csv-table-wrap">
+            <table class="csv-table">
+              <thead>
+                <tr><th>Name</th><th>Category</th><th>Unit</th><th>On hand</th><th>Par</th><th>Reorder</th><th>Supplier</th></tr>
+              </thead>
+              <tbody id="csvPreviewBody"></tbody>
+            </table>
+          </div>
+          <div class="submit-row">
+            <span class="submit-note" id="csvPreviewNote"></span>
+            <button class="submit-btn" id="csvImportBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              Import items
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Add Recipient Details view ===== -->
+    <section class="view" id="view-addrecipient">
+      <div class="main-head">
+        <h1 class="title">Add Recipient Details</h1>
+        <p class="subtitle">Add a recipient or station lead to manage requisitions.</p>
+      </div>
+      <div class="panel form-card">
+        <div class="field">
+          <label class="label">Recipient Name</label>
+          <input class="input" id="newRecipientName" placeholder="e.g. Marcus T." />
+        </div>
+        <div class="form-row two">
+          <div class="field">
+            <label class="label">Department</label>
+            <select class="input" id="newRecipientDepts"></select>
+          </div>
+          <div class="field">
+            <label class="label">Role / Position</label>
+            <input class="input" id="newRecipientRole" placeholder="e.g. Head Chef / Prep Lead" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Contact Email / Phone</label>
+          <input class="input" id="newRecipientContact" placeholder="e.g. marcus@kitchen.com" />
+        </div>
+        <p class="error" id="newRecipientError"></p>
+        <div class="submit-row">
+          <span class="submit-note">Recipient will be added to team directory.</span>
+          <button class="submit-btn" id="addRecipientBtn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Save Recipient
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Add Supplier Details view ===== -->
+    <section class="view" id="view-addsupplier">
+      <div class="main-head">
+        <h1 class="title">Add Supplier Details</h1>
+        <p class="subtitle">Add contact and order details for vendor requisitions.</p>
+      </div>
+      <div class="panel form-card">
+        <div class="field">
+          <label class="label">Supplier Name</label>
+          <input class="input" id="newSupplierName" placeholder="e.g. Fresh Fields Produce" />
+        </div>
+        <div class="form-row two">
+          <div class="field">
+            <label class="label">Contact Person</label>
+            <input class="input" id="newSupplierContact" placeholder="e.g. Sarah Jenkins" />
+          </div>
+          <div class="field">
+            <label class="label">Phone / Email</label>
+            <input class="input" id="newSupplierInfo" placeholder="e.g. orders@freshfields.com" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Category Specialty</label>
+          <select class="input" id="newSupplierCategory"></select>
+        </div>
+        <p class="error" id="newSupplierError"></p>
+        <div class="submit-row">
+          <span class="submit-note">New suppliers will be available when mapping items.</span>
+          <button class="submit-btn" id="addSupplierBtn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Save Supplier
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Add inventory item view ===== -->
+    <section class="view" id="view-additem">
+      <div class="main-head">
+        <h1 class="title">Add inventory item</h1>
+        <p class="subtitle">Track a new item and set its par level.</p>
+      </div>
+      <div class="panel form-card">
+        <div class="field">
+          <label class="label">Item name</label>
+          <input class="input" id="newItemName" placeholder="Cherry tomatoes" />
+        </div>
+        <div class="form-row two">
+          <div class="field">
+            <label class="label">Category</label>
+            <select class="input" id="newItemCategory"></select>
+          </div>
+          <div class="field">
+            <label class="label">Unit</label>
+            <input class="input" id="newItemUnit" placeholder="lb" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Supplier</label>
+          <input class="input" id="newItemSupplier" placeholder="Fresh Fields Produce" />
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label class="label">On hand</label>
+            <input class="input" type="number" min="0" step="1" id="newItemCurrent" placeholder="0" />
+          </div>
+          <div class="field">
+            <label class="label">Par</label>
+            <input class="input" type="number" min="0" step="1" id="newItemPar" placeholder="0" />
+          </div>
+          <div class="field">
+            <label class="label">Reorder point</label>
+            <input class="input" type="number" min="0" step="1" id="newItemReorder" placeholder="0" />
+          </div>
+        </div>
+        <p class="error" id="newItemError"></p>
+        <div class="submit-row">
+          <span class="submit-note">New items appear immediately in Par levels.</span>
+          <button class="submit-btn" id="addItemBtn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add item
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ===== Status / Fulfillment Update Modal ===== -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal">
+    <h3 class="modal-title" id="modalTicketId">Update Requisition</h3>
+    <div class="field">
+      <label class="label">Requisition Status</label>
+      <select class="input" id="modalStatusSelect">
+        <option value="Submitted">Submitted</option>
+        <option value="Approved">Approved</option>
+        <option value="Partial">Partial</option>
+        <option value="Fulfilled">Fulfilled</option>
+      </select>
+    </div>
+    <div class="field" id="modalItemsField" style="display:none;">
+      <label class="label">Check Fulfilled Items (Unchecked = Pending)</label>
+      <div class="modal-items" id="modalItemsList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sec" type="button" id="modalCancelBtn">Cancel</button>
+      <button class="submit-btn" type="button" id="modalSaveBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-----db connection--->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // Initialize EmailJS (Replace with your public key from emailjs.com)
+  emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+</script>
+
+<script>
+  // Initialize Supabase Client
+  const SUPABASE_URL = 'https://your-project-ref.supabase.co';
+  const SUPABASE_ANON_KEY = 'your-anon-public-key-here';
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+</script>
+
+<script>
+/* ---------------------------------------------------------------
+   Mock data — swap for your inventory system / POS integration.
+---------------------------------------------------------------- */
+const DEPTS = ["Management", "Purchases", "Admin", "Shop Level", "Other", "General"];
+const STATIONS = ["Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packaging"];
+const CATEGORIES = ["All", "Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packaging"];
+const ITEM_CATEGORIES = CATEGORIES.filter(c => c !== "All");
+const CSV_COLUMNS = ["name", "category", "unit", "current", "par", "reorder", "supplier"];
+
+let RECIPIENTS = [
+  { name: "Marcus T.", station: "Proteins", role: "Head Chef" },
+  { name: "Dana R.", station: "Dry Items", role: "Sous Chef" },
+  { name: "Carlos M.", station: "Bar", role: "Bar Lead" },
+  { name: "Chef Simon", station: "Proteins", role: "Executive Chef" }
+];
+
+let SUPPLIERS = [];
+
+/* Load the full recipient directory from Supabase. Falls back to keeping
+   whatever is already in RECIPIENTS (the local mock list) if the fetch
+   fails, so the UI never ends up empty. */
+async function fetchRecipients() {
+  const { data, error } = await supabase
+    .from("recipients")
+    .select("*")
+    .order("r_name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching recipients:", error);
+    showToast("Failed to load recipients from database");
+    return;
+  }
+
+  if (data && data.length > 0) {
+    RECIPIENTS = data.map(row => ({
+      name: row.r_name,
+      station: row.dept,
+      role: row.role,
+    }));
+  }
+}
+
+// live sync from supabase db
+let ITEMS = [];
+async function fetchInventoryItems() {
+  const { data, error } = await supabase
+    .from("inventory")
+    .select("*")
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching inventory items:", error);
+    showToast("Failed to load inventory from database");
+    return;
+  }
+
+  // Populate global ITEMS array with database records
+  ITEMS = data || [];
+
+  // Re-render UI components dependent on inventory data
+  renderDashboard();
+  renderItemPicker();
+}
+
+let tickets = [
+  {
+    id: "REQ-1041", station: "Proteins", recipient: "Marcus T.", neededBy: "Aug 23, 2026", status: "Fulfilled",
+    lines: [ { name: "Chicken breast", qty: 40, unit: "lb", pending: false }, { name: "Atlantic salmon", qty: 20, unit: "lb", pending: false } ],
+  },
+  {
+    id: "REQ-1040", station: "Dry Items", recipient: "Dana R.", neededBy: "Aug 22, 2026", status: "Approved",
+    lines: [ { name: "All-purpose flour", qty: 40, unit: "lb", pending: true }, { name: "Jasmine rice", qty: 50, unit: "lb", pending: true }, { name: "Kosher salt", qty: 5, unit: "lb", pending: true } ],
+  },
+  {
+    id: "REQ-1039", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Partial",
+    lines: [ { name: "House red wine", qty: 12, unit: "btl", pending: false }, { name: "Sparkling water", qty: 10, unit: "case", pending: true } ],
+  },
+];
+
+let cart = []; // { id, name, unit, supplier, qty }
+let query = "";
+let category = "All";
+let station = STATIONS[0];
+let csvPendingRows = [];
+let activeTicketId = null;
+
+const STATUS_COPY = {
+  critical: { label: "Below reorder point", color: "#E1512B" },
+  low: { label: "Under par", color: "#D9A441" },
+  stocked: { label: "At par", color: "#7C9A5D" },
+};
+const TICKET_STATUS_COLORS = {
+  Submitted: { bg: "rgba(217,164,65,0.16)", fg: "#D9A441" },
+  Pending: { bg: "rgba(217,164,65,0.16)", fg: "#D9A441" },
+  Approved: { bg: "rgba(124,141,181,0.18)", fg: "#9AABD1" },
+  Fulfilled: { bg: "rgba(124,154,93,0.18)", fg: "#9BC178" },
+  Partial: { bg: "rgba(225,81,43,0.16)", fg: "#E1512B" },
+};
+
+function stockStatus(item) {
+  if (item.current <= item.reorder) return "critical";
+  if (item.current < item.par) return "low";
+  return "stocked";
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : str;
+  return div.innerHTML;
+}
+
+function nextItemId() {
+  return ITEMS.length ? Math.max(...ITEMS.map(i => i.id)) + 1 : 1;
+}
+
+/* ---------------- rendering: shared / dashboard ---------------- */
+
+function renderCategoryChips() {
+  const el = document.getElementById("categoryChips");
+  el.innerHTML = CATEGORIES.map(c =>
+    `<button class="cat-chip ${c === category ? "is-selected" : ""}" data-cat="${c}">${c}</button>`
+  ).join("");
+  el.querySelectorAll("[data-cat]").forEach(btn => {
+    btn.addEventListener("click", () => { category = btn.dataset.cat; renderDashboard(); });
+  });
+}
+
+function renderStationChips() {
+  const el = document.getElementById("stationChips");
+  el.innerHTML = STATIONS.map(s =>
+    `<button class="cat-chip ${s === station ? "is-selected" : ""}" data-station="${s}">${s}</button>`
+  ).join("");
+  el.querySelectorAll("[data-station]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      station = btn.dataset.station;
+      renderStationChips();
+      autoSelectRecipientForStation();
+      renderPreview();
+    });
+  });
+}
+
+function renderRecipientSelect() {
+  const sel = document.getElementById("recipientSelect");
+  sel.innerHTML = RECIPIENTS.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.station || r.dept || "")})</option>`).join("") +
+    `<option value="custom">+ Other Recipient (from directory)...</option>`;
+  renderCustomRecipientSelect();
+  autoSelectRecipientForStation();
+}
+
+/* customRecipientInput used to be a free-text field. It's now a <select>
+   sourced from the same RECIPIENTS directory (loaded from Supabase via
+   fetchRecipients), so picking "Other Recipient" still only lets someone
+   choose a name that actually exists in the recipients table — not type
+   an arbitrary string. Keep it in sync any time RECIPIENTS changes. */
+function renderCustomRecipientSelect() {
+  const sel = document.getElementById("customRecipientInput");
+  if (!sel) return;
+  const previousValue = sel.value;
+  sel.innerHTML = `<option value="">Select a recipient…</option>` +
+    RECIPIENTS.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.station || r.dept || "")})</option>`).join("");
+  if (RECIPIENTS.some(r => r.name === previousValue)) {
+    sel.value = previousValue;
+  }
+}
+
+function autoSelectRecipientForStation() {
+  const sel = document.getElementById("recipientSelect");
+  const customInput = document.getElementById("customRecipientInput");
+  const match = RECIPIENTS.find(r => r.station === station);
+  if (match) {
+    sel.value = match.name;
+    customInput.style.display = "none";
+  } else if (RECIPIENTS.length > 0) {
+    sel.value = RECIPIENTS[0].name;
+    customInput.style.display = "none";
+  } else {
+    sel.value = "custom";
+    customInput.style.display = "block";
+  }
+}
+
+function renderDashboard() {
+  const grid = document.getElementById("itemGrid");
+  const filtered = ITEMS.filter(i =>
+    (category === "All" || i.category === category) &&
+    i.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const criticalItems = ITEMS.filter(i => stockStatus(i) === "critical");
+  const banner = document.getElementById("alertBanner");
+  if (criticalItems.length > 0) {
+    banner.style.display = "flex";
+    document.getElementById("alertText").textContent =
+      `${criticalItems.length} item${criticalItems.length === 1 ? " is" : "s are"} below its reorder point.`;
+  } else {
+    banner.style.display = "none";
+  }
+  document.getElementById("criticalCountNav").textContent = criticalItems.length;
+  document.getElementById("criticalCountNav").classList.toggle("is-hidden", criticalItems.length === 0);
+  document.getElementById("criticalCountFoot").textContent = criticalItems.length;
+  document.getElementById("itemTotalFoot").textContent = `of ${ITEMS.length} tracked items`;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty">No items match "${escapeHtml(query)}."</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(item => {
+    const status = stockStatus(item);
+    const pct = Math.min(100, Math.round((item.current / item.par) * 100));
+    const reorderPct = Math.round((item.reorder / item.par) * 100);
+    return `
+      <div class="item-card">
+        <div class="item-top">
+          <div>
+            <div class="item-name">${escapeHtml(item.name)}</div>
+            <div class="item-supplier">${escapeHtml(item.supplier)}</div>
+          </div>
+          <span class="status-dot" style="background:${STATUS_COPY[status].color}" title="${STATUS_COPY[status].label}"></span>
+        </div>
+        <div class="gauge">
+          <div class="gauge-track">
+            <div class="gauge-fill" style="width:${pct}%;background:${STATUS_COPY[status].color}"></div>
+            <div class="gauge-reorder" style="left:${reorderPct}%"></div>
+          </div>
+          <div class="gauge-labels">
+            <span><strong>${item.current}</strong> ${escapeHtml(item.unit)} on hand</span>
+            <span class="gauge-par">par ${item.par}</span>
+          </div>
+        </div>
+        <div class="item-foot">
+          <span class="item-status" style="color:${STATUS_COPY[status].color}">${STATUS_COPY[status].label}</span>
+          <button class="add-btn" data-add="${item.id}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+            Add to request
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  grid.querySelectorAll("[data-add]").forEach(btn => {
+    btn.addEventListener("click", () => addToRequest(parseInt(btn.dataset.add, 10)));
+  });
+}
+
+/* ---------------- rendering: requisition builder ---------------- */
+
+function getSelectedRecipientName() {
+  const sel = document.getElementById("recipientSelect");
+  if (sel.value === "custom") {
+    return document.getElementById("customRecipientInput").value.trim() || "Unassigned";
+  }
+  return sel.value;
+}
+
+function renderItemPicker() {
+  const picker = document.getElementById("itemPicker");
+  const previousValue = picker.value;
+  const available = ITEMS.filter(i => !cart.some(l => l.id === i.id));
+
+  if (available.length === 0) {
+    picker.innerHTML = `<option value="">All items added</option>`;
+    picker.disabled = true;
+    document.getElementById("pickerAddBtn").disabled = true;
+    return;
+  }
+  picker.disabled = false;
+  document.getElementById("pickerAddBtn").disabled = false;
+
+  const byCategory = {};
+  available.forEach(i => {
+    byCategory[i.category] = byCategory[i.category] || [];
+    byCategory[i.category].push(i);
+  });
+
+  picker.innerHTML = Object.keys(byCategory).map(cat => `
+    <optgroup label="${escapeHtml(cat)}">
+      ${byCategory[cat].map(i => `<option value="${i.id}">${escapeHtml(i.name)} (${escapeHtml(i.unit)})</option>`).join("")}
+    </optgroup>
+  `).join("");
+
+  if (available.some(i => String(i.id) === previousValue)) {
+    picker.value = previousValue;
+  }
+}
+
+function renderCart() {
+  const list = document.getElementById("cartList");
+  const hint = document.getElementById("cartHint");
+  document.getElementById("cartCountLabel").textContent = cart.length;
+  document.getElementById("cartCountNav").textContent = cart.length;
+  document.getElementById("cartCountNav").classList.toggle("is-hidden", cart.length === 0);
+
+  if (cart.length === 0) {
+    hint.style.display = "block";
+    list.innerHTML = "";
+  } else {
+    hint.style.display = "none";
+    list.innerHTML = cart.map(line => `
+      <div class="cart-row">
+        <div>
+          <div class="cart-name">${escapeHtml(line.name)}</div>
+          <div class="cart-supplier">${escapeHtml(line.supplier)}</div>
+        </div>
+        <div class="stepper">
+          <button data-dec="${line.id}" aria-label="Decrease ${escapeHtml(line.name)}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+          </button>
+          <span>${line.qty} <span class="cart-unit">${escapeHtml(line.unit)}</span></span>
+          <button data-inc="${line.id}" aria-label="Increase ${escapeHtml(line.name)}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+          </button>
+        </div>
+        <button class="remove-btn" data-remove="${line.id}" aria-label="Remove ${escapeHtml(line.name)}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z"/></svg>
+        </button>
+      </div>
+    `).join("");
+
+    list.querySelectorAll("[data-dec]").forEach(b => b.addEventListener("click", () => updateQty(parseInt(b.dataset.dec, 10), -1)));
+    list.querySelectorAll("[data-inc]").forEach(b => b.addEventListener("click", () => updateQty(parseInt(b.dataset.inc, 10), 1)));
+    list.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", () => removeLine(parseInt(b.dataset.remove, 10))));
+  }
+
+  const suppliers = [...new Set(cart.map(l => l.supplier))];
+  document.getElementById("submitNote").textContent = suppliers.length > 0
+    ? `Splits across ${suppliers.length} supplier${suppliers.length === 1 ? "" : "s"}`
+    : "Pick items to see supplier split";
+
+  renderPreview();
+  renderItemPicker();
+}
+
+function renderPreview() {
+  document.getElementById("previewStation").textContent = station;
+  document.getElementById("previewRecipient").textContent = getSelectedRecipientName();
+
+  const neededBy = document.getElementById("neededByInput").value;
+  document.getElementById("previewFoot").textContent = neededBy ? `Needed ${neededBy}` : "Needed-by not set";
+  const linesEl = document.getElementById("previewLines");
+  if (cart.length === 0) {
+    linesEl.innerHTML = `<div class="ticket-empty">— no items yet —</div>`;
+  } else {
+    linesEl.innerHTML = cart.map(l => `
+      <div class="ticket-line"><span>${escapeHtml(l.name)}</span><span>${l.qty} ${escapeHtml(l.unit)}</span></div>
+    `).join("");
+  }
+}
+
+function renderTickets() {
+  const grid = document.getElementById("ticketGrid");
+  grid.innerHTML = tickets.map(t => {
+    const c = TICKET_STATUS_COLORS[t.status] || TICKET_STATUS_COLORS.Submitted;
+    return `
+      <div class="ticket-card" onclick="openStatusModal('${t.id}')">
+        <div class="ticket-perf"></div>
+        <div class="ticket-card-head">
+          <div>
+            <div class="ticket-card-id">${t.id}</div>
+            <div class="ticket-card-meta">${escapeHtml(t.station)} · Recipient: ${escapeHtml(t.recipient || "N/A")}</div>
+          </div>
+          <span class="status-pill" style="background:${c.bg};color:${c.fg}">${t.status}</span>
+        </div>
+        <div class="ticket-lines">
+          ${t.lines.map(l => {
+            let tag = "";
+            if (t.status === "Partial") {
+              tag = l.pending ? `<span class="pending-tag">Pending</span>` : `<span class="fulfilled-tag">Fulfilled</span>`;
+            }
+            return `<div class="ticket-line"><span>${escapeHtml(l.name)}${tag}</span><span>${l.qty} ${escapeHtml(l.unit)}</span></div>`;
+          }).join("")}
+        </div>
+        <div class="ticket-foot">Needed ${escapeHtml(t.neededBy)}</div>
+      </div>
+    `;
+  }).join("");
+
+  checkPendingReminders();
+}
+
+function checkPendingReminders() {
+  const pendingSummary = [];
+  tickets.forEach(t => {
+    if (t.status !== "Fulfilled") {
+      t.lines.forEach(l => {
+        if (l.pending) {
+          pendingSummary.push(`${l.qty} ${l.unit} ${l.name} (${t.id})`);
+        }
+      });
+    }
+  });
+
+  const banner = document.getElementById("reminderBanner");
+  if (pendingSummary.length > 0) {
+    banner.style.display = "flex";
+    document.getElementById("reminderText").textContent =
+      `Daily Reminder: ${pendingSummary.length} unfulfilled item(s) pending delivery: ${pendingSummary.join(", ")}.`;
+  } else {
+    banner.style.display = "none";
+  }
+}
+
+/* ---------------- status modal logic ---------------- */
+
+function openStatusModal(id) {
+  activeTicketId = id;
+  const ticket = tickets.find(t => t.id === id);
+  if (!ticket) return;
+
+  document.getElementById("modalTicketId").textContent = `Update ${ticket.id}`;
+  const select = document.getElementById("modalStatusSelect");
+  // Newly-inserted Supabase rows start life as "Pending" before anyone
+  // has triaged them — treat that the same as "Submitted" in the UI.
+  select.value = ticket.status === "Pending" ? "Submitted" : ticket.status;
+
+  renderModalItemsList(ticket);
+  toggleModalItemsDisplay();
+
+  document.getElementById("statusModal").classList.add("is-open");
+}
+
+function closeModal() {
+  document.getElementById("statusModal").classList.remove("is-open");
+  activeTicketId = null;
+}
+
+function toggleModalItemsDisplay() {
+  const status = document.getElementById("modalStatusSelect").value;
+  const itemsField = document.getElementById("modalItemsField");
+  itemsField.style.display = status === "Partial" ? "flex" : "none";
+}
+
+function renderModalItemsList(ticket) {
+  const container = document.getElementById("modalItemsList");
+  container.innerHTML = ticket.lines.map((l, idx) => `
+    <div class="modal-item-row">
+      <label>
+        <input type="checkbox" data-line-idx="${idx}" ${!l.pending ? "checked" : ""}>
+        <span>${escapeHtml(l.name)} (${l.qty} ${escapeHtml(l.unit)})</span>
+      </label>
+    </div>
+  `).join("");
+}
+
+async function saveTicketStatus() {
+  const ticket = tickets.find(t => t.id === activeTicketId);
+  if (!ticket) return;
+
+  const newStatus = document.getElementById("modalStatusSelect").value;
+  ticket.status = newStatus;
+
+  if (newStatus === "Fulfilled") {
+    ticket.lines.forEach(l => l.pending = false);
+  } else if (newStatus === "Submitted" || newStatus === "Approved") {
+    ticket.lines.forEach(l => l.pending = true);
+  } else if (newStatus === "Partial") {
+    const checkboxes = document.querySelectorAll("#modalItemsList input[type='checkbox']");
+    checkboxes.forEach(cb => {
+      const idx = parseInt(cb.dataset.lineIdx, 10);
+      ticket.lines[idx].pending = !cb.checked;
+    });
+  }
+
+  // Persist the status + line-item pending flags back to Supabase.
+  if (ticket.dbId) {
+    const { error } = await supabase
+      .from("requisitions")
+      .update({ status: newStatus, items: ticket.lines })
+      .eq("id", ticket.dbId);
+    if (error) {
+      console.error("Error updating requisition status:", error);
+      showToast("Failed to save status change");
+    }
+  }
+
+  closeModal();
+  renderTickets();
+  showToast(`Updated ${ticket.id} status to ${newStatus}`);
+}
+
+/* ---------------- rendering: forms selects ---------------- */
+
+function renderItemCategorySelect() {
+  const sel = document.getElementById("newItemCategory");
+  sel.innerHTML = ITEM_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
+}
+
+function renderRecipientAndSupplierSelects() {
+  const supplierCategory = document.getElementById("newSupplierCategory");
+  if (supplierCategory) {
+    supplierCategory.innerHTML = ITEM_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
+  }
+  const recipientDepts = document.getElementById("newRecipientDepts");
+  if (recipientDepts) {
+    recipientDepts.innerHTML = DEPTS.map(s => `<option value="${s}">${s}</option>`).join("");
+  }
+}
+
+/* ---------------- actions: requisition ---------------- */
+
+function addToRequest(itemId) {
+  const item = ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  if (!cart.some(l => l.id === item.id)) {
+    const suggested = Math.max(1, item.par - item.current);
+    cart.push({ id: item.id, name: item.name, unit: item.unit, supplier: item.supplier, qty: suggested });
+  }
+  showToast(`${item.name} added to requisition`);
+  renderCart();
+}
+
+function updateQty(id, delta) {
+  const line = cart.find(l => l.id === id);
+  if (!line) return;
+  line.qty = Math.max(1, line.qty + delta);
+  renderCart();
+}
+
+function removeLine(id) {
+  cart = cart.filter(l => l.id !== id);
+  renderCart();
+}
+
+/* Build+save a requisition, persist to Supabase, and email the recipient
+   if we have an address on file. This replaces the two separate
+   (and conflicting) submitRequisition() implementations that used to
+   exist here — there is now exactly one. */
+async function submitRequisition() {
+  const neededBy = document.getElementById("neededByInput").value;
+  const recipient = getSelectedRecipientName();
+  const errorEl = document.getElementById("reqError");
+
+  if (!recipient || recipient === "Unassigned") {
+    errorEl.textContent = "Please select or specify a recipient lead.";
+    errorEl.classList.add("is-visible");
+    return;
+  }
+  if (cart.length === 0) {
+    errorEl.textContent = "Add at least one item before submitting.";
+    errorEl.classList.add("is-visible");
+    return;
+  }
+  if (!neededBy) {
+    errorEl.textContent = "Pick a needed-by date.";
+    errorEl.classList.add("is-visible");
+    return;
+  }
+  errorEl.classList.remove("is-visible");
+
+  const formattedDate = new Date(neededBy + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const ticketNumber = `REQ-${Date.now().toString().slice(-4)}`;
+  const lines = cart.map(l => ({ name: l.name, qty: l.qty, unit: l.unit, pending: true }));
+
+  // 1. Look up the recipient's email address, if we have one on file.
+  //    RECIPIENTS rows saved via addRecipientDetails() use the "tel"
+  //    column for contact info and "r_name" for the name — match both here.
+  let recipientEmail = "";
+  const { data: recipientData, error: recipientLookupError } = await supabase
+    .from("recipients")
+    .select("tel")
+    .eq("r_name", recipient)
+    .maybeSingle();
+
+  if (recipientLookupError) {
+    console.error("Error looking up recipient contact:", recipientLookupError);
+  } else if (recipientData && recipientData.tel && recipientData.tel.includes("@")) {
+    recipientEmail = recipientData.tel;
+  }
+
+  const newTicket = {
+    ticket_number: ticketNumber,
+    recipient_name: recipient,
+    department: station,
+    needed_by: neededBy,
+    items: lines,
+    status: "Submitted",
+  };
+
+  // 2. Insert requisition into Supabase.
+  const { data, error } = await supabase
+    .from("requisitions")
+    .insert([newTicket])
+    .select();
+
+  if (error) {
+    console.error("Error saving requisition:", error);
+    errorEl.textContent = "Failed to save requisition to database.";
+    errorEl.classList.add("is-visible");
+    return;
+  }
+
+  // 3. Optimistically update the local ticket list so History reflects
+  //    the new requisition immediately, in the shape renderTickets() expects.
+  const savedRow = data && data[0] ? data[0] : {};
+  tickets.unshift({
+    id: ticketNumber,
+    dbId: savedRow.id,
+    station,
+    recipient,
+    neededBy: formattedDate,
+    status: "Submitted",
+    lines,
+  });
+
+  // 4. Email the recipient, if we found an address for them.
+  if (recipientEmail) {
+    const itemListFormatted = lines.map(l => `- ${l.name}: ${l.qty} ${l.unit}`).join("\n");
+    const emailParams = {
+      to_email: recipientEmail,
+      recipient_name: recipient,
+      ticket_number: ticketNumber,
+      department: station,
+      items_list: itemListFormatted,
+    };
+    try {
+      // Replace SERVICE_ID and TEMPLATE_ID with your EmailJS credentials.
+      await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", emailParams);
+      console.log(`Requisition email sent to ${recipientEmail}`);
+    } catch (emailErr) {
+      console.error("Failed to send requisition email:", emailErr);
+      // Non-fatal: the requisition itself is already saved.
+    }
+  }
+
+  // 5. Reset local cart/form state and refresh the History view from Supabase
+  //    (falls back to the optimistic entry above if the refetch fails).
+  cart = [];
+  document.getElementById("neededByInput").value = "";
+  renderCart();
+  await fetchRequisitions();
+  switchView("history");
+}
+
+/* Pull requisitions from Supabase and normalize them into the shape
+   renderTickets()/openStatusModal() expect: {id, dbId, station, recipient,
+   neededBy, status, lines: [{name, qty, unit, pending}]}. */
+async function fetchRequisitions() {
+  const { data, error } = await supabase
+    .from("requisitions")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching requisitions:", error);
+    return;
+  }
+
+  if (data) {
+    tickets = data.map(row => ({
+      id: row.ticket_number || row.id,
+      dbId: row.id,
+      station: row.department || "",
+      recipient: row.recipient_name || "",
+      neededBy: row.needed_by
+        ? new Date(row.needed_by + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+        : "—",
+      status: row.status || "Submitted",
+      lines: Array.isArray(row.items) ? row.items : [],
+    }));
+  }
+
+  renderTickets();
+}
+
+async function initApp() {
+  renderCategoryChips();
+  renderStationChips();
+  renderItemCategorySelect();
+  renderRecipientAndSupplierSelects();
+
+  // Load the recipient directory from Supabase first so both the main
+  // recipient select and the "Other Recipient" select are populated
+  // with real data, not just the local mock list.
+  await fetchRecipients();
+  renderRecipientSelect();
+
+  // Load remaining data from Supabase
+  await fetchInventoryItems();
+  await fetchRequisitions();
+
+  renderCart();
+  renderTickets();
+}
+
+/* ---------------- actions: add recipient & supplier details ---------------- */
+
+async function addRecipientDetails() {
+  const name = document.getElementById("newRecipientName").value.trim();
+  const stationVal = document.getElementById("newRecipientDepts").value;
+  const role = document.getElementById("newRecipientRole").value.trim() || "Lead";
+  const contact = document.getElementById("newRecipientContact").value.trim();
+  const errorEl = document.getElementById("newRecipientError");
+
+  if (!name) return showFormError(errorEl, "Enter recipient name.");
+  if (!contact) return showFormError(errorEl, "Enter contact email or phone.");
+
+  errorEl.classList.remove("is-visible");
+
+  // Insert into Supabase database
+  const { data, error } = await supabase
+    .from("recipients")
+    .insert([
+      {
+        r_name: name,
+        tel: contact,
+        dept: stationVal,
+        role: role
+      }
+    ])
+    .select(); // Returns the newly created row with database ID
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    return showFormError(errorEl, `Failed to save: ${error.message}`);
+  }
+
+  // Update local state with the saved record from database, normalized to
+  // the {name, station, role} shape the rest of the UI (recipient <select>,
+  // station auto-match) expects.
+  if (data && data.length > 0) {
+    const saved = data[0];
+    RECIPIENTS.push({ name: saved.r_name, station: saved.dept, role: saved.role });
+  }
+
+  renderRecipientSelect();
+
+  // Reset input fields
+  document.getElementById("newRecipientName").value = "";
+  document.getElementById("newRecipientRole").value = "";
+  document.getElementById("newRecipientContact").value = "";
+
+  showToast(`Recipient ${name} added successfully`);
+}
+
+async function addSupplierDetails() {
+  const name = document.getElementById("newSupplierName").value.trim();
+  const contact = document.getElementById("newSupplierContact").value.trim();
+  const tel = document.getElementById("newSupplierInfo") ? document.getElementById("newSupplierInfo").value.trim() : "";
+  const category = document.getElementById("newSupplierCategory") ? document.getElementById("newSupplierCategory").value.trim() : "";
+  const errorEl = document.getElementById("newSupplierError");
+
+  if (!name) return showFormError(errorEl, "Enter supplier name.");
+  if (!contact) return showFormError(errorEl, "Enter contact details.");
+
+  errorEl.classList.remove("is-visible");
+
+  // Insert into Supabase 'suppliers' database table
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert([
+      {
+        s_name: name,
+        tel: tel,
+        category: category,
+        contact: contact
+      }
+    ])
+    .select();
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    return showFormError(errorEl, `Failed to save: ${error.message}`);
+  }
+
+  if (data && data.length > 0) {
+    SUPPLIERS.push(data[0]);
+  }
+
+  // Clear input fields
+  document.getElementById("newSupplierName").value = "";
+  document.getElementById("newSupplierContact").value = "";
+  if (document.getElementById("newSupplierInfo")) document.getElementById("newSupplierInfo").value = "";
+
+  showToast(`Supplier ${name} added successfully`);
+}
+
+/* ---------------- actions: add single inventory item ---------------- */
+
+async function addInventoryItem() {
+  const name = document.getElementById("newItemName").value.trim();
+  const cat = document.getElementById("newItemCategory").value;
+  const unit = document.getElementById("newItemUnit").value.trim();
+  const supplier = document.getElementById("newItemSupplier").value.trim();
+  const current = parseFloat(document.getElementById("newItemCurrent").value);
+  const par = parseFloat(document.getElementById("newItemPar").value);
+  const reorder = parseFloat(document.getElementById("newItemReorder").value);
+  const errorEl = document.getElementById("newItemError");
+
+  if (!name) return showFormError(errorEl, "Give this item a name.");
+  if (!unit) return showFormError(errorEl, "Add a unit, like lb or case.");
+  if (!supplier) return showFormError(errorEl, "Add a supplier.");
+  if (isNaN(current) || current < 0) return showFormError(errorEl, "On hand needs to be a number, 0 or more.");
+  if (isNaN(par) || par <= 0) return showFormError(errorEl, "Par needs to be a number greater than 0.");
+  if (isNaN(reorder) || reorder < 0) return showFormError(errorEl, "Reorder point needs to be a number, 0 or more.");
+  if (ITEMS.some(i => i.name.toLowerCase() === name.toLowerCase())) {
+    return showFormError(errorEl, `"${name}" is already tracked. Update it from Par levels instead.`);
+  }
+
+  errorEl.classList.remove("is-visible");
+
+  // Insert record into Supabase 'inventory' table
+  const { data, error } = await supabase
+    .from("inventory")
+    .insert([
+      {
+        name: name,
+        category: cat,
+        unit: unit,
+        current: current,
+        par: par,
+        reorder: reorder,
+        supplier: supplier
+      }
+    ])
+    .select();
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    return showFormError(errorEl, `Failed to save: ${error.message}`);
+  }
+
+  // Push the row returned by Supabase (includes auto-generated DB id) into local array
+  if (data && data.length > 0) {
+    ITEMS.push(data[0]);
+  }
+
+  // Reset form fields
+  document.getElementById("newItemName").value = "";
+  document.getElementById("newItemUnit").value = "";
+  document.getElementById("newItemSupplier").value = "";
+  document.getElementById("newItemCurrent").value = "";
+  document.getElementById("newItemPar").value = "";
+  document.getElementById("newItemReorder").value = "";
+
+  showToast(`${name} added to inventory`);
+  renderDashboard();
+  renderItemPicker();
+}
+
+function showFormError(el, message) {
+  el.textContent = message;
+  el.classList.add("is-visible");
+}
+
+/* ---------------- actions: CSV import ---------------- */
+
+function parseCSVLine(line) {
+  const cells = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { cells.push(cur); cur = ""; }
+      else cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells.map(c => c.trim());
+}
+
+function parseInventoryCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 2) {
+    return { rows: [], errors: ["The file needs a header row plus at least one item."] };
+  }
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+  const missing = CSV_COLUMNS.filter(c => !headers.includes(c));
+  if (missing.length) {
+    return { rows: [], errors: [`Missing column${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`] };
+  }
+
+  const rows = [];
+  const errors = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = parseCSVLine(lines[i]);
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = cells[idx] !== undefined ? cells[idx] : ""; });
+
+    if (!row.name) { errors.push(`Row ${i + 1}: missing item name.`); continue; }
+
+    const current = parseFloat(row.current);
+    const par = parseFloat(row.par);
+    const reorder = parseFloat(row.reorder);
+    if (isNaN(current) || isNaN(par) || isNaN(reorder)) {
+      errors.push(`Row ${i + 1} (${row.name}): current, par, and reorder must be numbers.`);
+      continue;
+    }
+
+    let cat = row.category && ITEM_CATEGORIES.includes(toTitleCategory(row.category))
+      ? toTitleCategory(row.category)
+      : (row.category || "Dry Items");
+    if (!ITEM_CATEGORIES.includes(cat)) cat = "Dry Items";
+
+    rows.push({
+      name: row.name,
+      category: cat,
+      unit: row.unit || "unit",
+      current, par, reorder,
+      supplier: row.supplier || "Unassigned",
+    });
+  }
+  return { rows, errors };
+}
+
+function toTitleCategory(val) {
+  const map = {};
+  ITEM_CATEGORIES.forEach(c => { map[c.toLowerCase()] = c; });
+  return map[val.trim().toLowerCase()] || val;
+}
+
+function renderCSVPreview() {
+  const wrap = document.getElementById("csvPreviewWrap");
+  const body = document.getElementById("csvPreviewBody");
+  const note = document.getElementById("csvPreviewNote");
+
+  if (csvPendingRows.length === 0) {
+    wrap.style.display = "none";
+    return;
+  }
+
+  wrap.style.display = "block";
+  body.innerHTML = csvPendingRows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.category)}</td>
+      <td>${escapeHtml(r.unit)}</td>
+      <td>${r.current}</td>
+      <td>${r.par}</td>
+      <td>${r.reorder}</td>
+      <td>${escapeHtml(r.supplier)}</td>
+    </tr>
+  `).join("");
+  note.textContent = `${csvPendingRows.length} item${csvPendingRows.length === 1 ? "" : "s"} ready to import`;
+}
+
+function handleCSVFile(file) {
+  document.getElementById("csvFileName").textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const { rows, errors } = parseInventoryCSV(String(reader.result));
+    csvPendingRows = rows;
+
+    const errorsEl = document.getElementById("csvErrors");
+    errorsEl.innerHTML = errors.map(e => `<div class="error-line">${escapeHtml(e)}</div>`).join("");
+
+    renderCSVPreview();
+  };
+  reader.onerror = () => {
+    document.getElementById("csvErrors").innerHTML = `<div class="error-line">Couldn't read that file. Try again.</div>`;
+  };
+  reader.readAsText(file);
+}
+
+async function importCSVRows() {
+  if (csvPendingRows.length === 0) return;
+  let added = 0;
+  let merged = 0;
+
+  for (const r of csvPendingRows) {
+    const existing = ITEMS.find(i => i.name.toLowerCase() === r.name.toLowerCase());
+    if (existing) {
+      const { error } = await supabase
+        .from("inventory")
+        .update({
+          current: r.current,
+          par: r.par,
+          reorder: r.reorder,
+          unit: r.unit,
+          supplier: r.supplier,
+          category: r.category,
+        })
+        .eq("id", existing.id);
+      if (!error) {
+        Object.assign(existing, r);
+        merged++;
+      } else {
+        console.error("Supabase update error:", error);
+      }
+    } else {
+      const { data, error } = await supabase.from("inventory").insert([r]).select();
+      if (!error && data && data[0]) {
+        ITEMS.push(data[0]);
+        added++;
+      } else if (error) {
+        console.error("Supabase insert error:", error);
+      }
+    }
+  }
+
+  csvPendingRows = [];
+  document.getElementById("csvPreviewWrap").style.display = "none";
+  document.getElementById("csvErrors").innerHTML = "";
+  document.getElementById("csvFileName").textContent = "No file selected";
+  document.getElementById("csvFileInput").value = "";
+
+  const parts = [];
+  if (added) parts.push(`${added} added`);
+  if (merged) parts.push(`${merged} updated`);
+  showToast(parts.join(", ") || "Import complete");
+
+  renderDashboard();
+  renderItemPicker();
+}
+
+function downloadCSVTemplate() {
+  const header = CSV_COLUMNS.join(",");
+  const sample = "Cherry tomatoes,Vegetables,lb,10,30,12,Fresh Fields Produce";
+  const blob = new Blob([header + "\n" + sample + "\n"], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "inventory-template.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- toast + view switching ---------------- */
+
+let toastTimer = null;
+function showToast(text) {
+  const toast = document.getElementById("toast");
+  document.getElementById("toastText").textContent = text;
+  toast.classList.add("is-visible");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 1800);
+}
+
+function switchView(view) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("is-active"));
+  document.getElementById(`view-${view}`).classList.add("is-active");
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("is-active", n.dataset.view === view));
+}
+
+/* ---------------- wire up ---------------- */
+
+document.querySelectorAll(".nav-item").forEach(btn => {
+  btn.addEventListener("click", () => switchView(btn.dataset.view));
+});
+
+document.getElementById("itemSearch").addEventListener("input", (e) => {
+  query = e.target.value;
+  renderDashboard();
+});
+
+document.getElementById("recipientSelect").addEventListener("change", (e) => {
+  const customInput = document.getElementById("customRecipientInput");
+  if (e.target.value === "custom") {
+    customInput.style.display = "block";
+    customInput.focus();
+  } else {
+    customInput.style.display = "none";
+  }
+  renderPreview();
+});
+
+document.getElementById("customRecipientInput").addEventListener("change", renderPreview);
+document.getElementById("neededByInput").addEventListener("change", renderPreview);
+document.getElementById("submitReq").addEventListener("click", submitRequisition);
+document.getElementById("pickerAddBtn").addEventListener("click", () => {
+  const picker = document.getElementById("itemPicker");
+  const id = parseInt(picker.value, 10);
+  if (!id) return;
+  addToRequest(id);
+});
+
+document.getElementById("addItemBtn").addEventListener("click", addInventoryItem);
+document.getElementById("addRecipientBtn").addEventListener("click", addRecipientDetails);
+document.getElementById("addSupplierBtn").addEventListener("click", addSupplierDetails);
+
+document.getElementById("csvChooseBtn").addEventListener("click", () => document.getElementById("csvFileInput").click());
+document.getElementById("csvFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) handleCSVFile(file);
+});
+document.getElementById("csvImportBtn").addEventListener("click", importCSVRows);
+document.getElementById("downloadTemplateBtn").addEventListener("click", downloadCSVTemplate);
+
+document.getElementById("modalStatusSelect").addEventListener("change", toggleModalItemsDisplay);
+document.getElementById("modalCancelBtn").addEventListener("click", closeModal);
+document.getElementById("modalSaveBtn").addEventListener("click", saveTicketStatus);
+
+initApp();
+</script>
+</body>
+</html>
