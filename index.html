@@ -251,14 +251,27 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
       <span>Add Recipient Details</span>
     </button>
-    <button class="nav-item" data-view="addsupplier">
+    <!-- <button class="nav-item" data-view="addsupplier">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
       <span>Add Supplier Details</span>
-    </button>
+    </button> -->
     <button class="nav-item" data-view="additem">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
       <span>Add inventory item</span>
     </button>
+
+     <div class="nav-divider"></div>
+    
+    <button class="nav-item" data-view="addsupplier">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Add Supplier Details</span>
+    </button>
+    <button class="nav-item" data-view="request">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg>
+      <span>Supplier Request</span>
+      <span class="nav-count is-hidden" id="cartCountNav">0</span>
+    </button>
+    
 
     <div class="sidebar-foot">
       <div class="sidebar-foot-label">Below reorder</div>
@@ -541,6 +554,72 @@
   </main>
 </div>
 
+<!-- ===== New Supplier Request view ===== -->
+    <section class="view" id="view-request">
+      <div class="main-head">
+        <h1 class="title">Supplier Request</h1>
+        <p class="subtitle">Build a request and send it to your suppliers.</p>
+      </div>
+      <div class="req">
+        <div class="req-form">
+          <div class="field">
+            <label class="label">Item Category</label>
+            <div class="chip-row" id="stationChips"></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="label">Recipient / Lead</label>
+              <select class="input" id="recipientSelect"></select>
+              <select class="input" id="customRecipientInput" style="display:none; margin-top:6px;"></select>
+            </div>
+            <div class="field">
+              <label class="label">Needed by</label>
+              <input type="date" class="input" id="neededByInput" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Items (<span id="cartCountLabel">0</span>)</label>
+            <div class="item-picker">
+              <select class="input" id="itemPicker"></select>
+              <button class="picker-add-btn" id="pickerAddBtn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+                Add
+              </button>
+            </div>
+            <p class="hint" id="cartHint">Nothing added yet. Pick an item above, or add it straight from Par levels.</p>
+            <div class="cart-list" id="cartList"></div>
+          </div>
+          <p class="error" id="reqError"></p>
+          <div class="submit-row">
+            <span class="submit-note" id="submitNote">Pick items to see supplier split</span>
+            <button class="submit-btn" id="submitReq">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+              <span id="submitReqLabel">Submit requisition</span>
+            </button>
+          </div>
+        </div>
+        <div class="ticket-preview-wrap">
+          <div class="ticket-preview">
+            <div class="ticket-perf"></div>
+            <div class="ticket-head">
+              <span>Requisition</span>
+              <span id="previewStation">Proteins</span>
+            </div>
+            <div class="ticket-recipient">
+              <span>Recipient</span>
+              <strong id="previewRecipient">Marcus T.</strong>
+            </div>
+            <div class="ticket-lines" id="previewLines">
+              <div class="ticket-empty">— no items yet —</div>
+            </div>
+            <div class="ticket-foot" id="previewFoot">Needed-by not set</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
 <!-- ===== Status / Fulfillment Update Modal ===== -->
 <div class="modal-overlay" id="statusModal">
   <div class="modal">
@@ -606,11 +685,11 @@ async function sendRequisitionEmail(details) {
   };
 
   try {
-    const response = await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", templateParams);
-    console.log("Requisition email dispatched successfully:", response.status, response.text);
+    const response = await emailjs.send("service_zfld4ro", "template_sgy6nl9", templateParams);
+    console.log("Purchase Request email dispatched successfully:", response.status, response.text);
     return true;
   } catch (err) {
-    console.error("Failed to send requisition email via EmailJS:", err);
+    console.error("Failed to send purchase request email via EmailJS:", err);
     return false;
   }
 }
