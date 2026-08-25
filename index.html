@@ -233,7 +233,7 @@
     </button>
     <button class="nav-item" data-view="requisition">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg>
-      <span>Purchase Request</span>
+      <span>New requisition</span>
       <span class="nav-count is-hidden" id="cartCountNav">0</span>
     </button>
     <button class="nav-item" data-view="history">
@@ -587,6 +587,33 @@ const STATIONS = ["Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packa
 const CATEGORIES = ["All", "Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packaging"];
 const ITEM_CATEGORIES = CATEGORIES.filter(c => c !== "All");
 const CSV_COLUMNS = ["name", "category", "unit", "current", "par", "reorder", "supplier"];
+
+/* ---------------- email dispatch helper ---------------- */
+
+async function sendRequisitionEmail(details) {
+  if (typeof emailjs === "undefined") {
+    console.warn("EmailJS SDK is missing or failed to initialize.");
+    return false;
+  }
+  
+  const templateParams = {
+    to_email: details.recipientEmail,
+    recipient_name: details.recipientName,
+    ticket_number: details.ticketNumber,
+    department: details.department,
+    needed_by: details.neededBy,
+    items_list: details.itemsList
+  };
+
+  try {
+    const response = await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", templateParams);
+    console.log("Requisition email dispatched successfully:", response.status, response.text);
+    return true;
+  } catch (err) {
+    console.error("Failed to send requisition email via EmailJS:", err);
+    return false;
+  }
+}
 
 /* ---------------- toast helper (success / error) ---------------- */
 
@@ -988,12 +1015,7 @@ function downloadCSVTemplate() {
   URL.revokeObjectURL(url);
 }
 
-let RECIPIENTS = [
-  { name: "Marcus T.", station: "Proteins", role: "Head Chef" },
-  { name: "Dana R.", station: "Dry Items", role: "Sous Chef" },
-  { name: "Carlos M.", station: "Bar", role: "Bar Lead" },
-  { name: "Chef Simon", station: "Proteins", role: "Executive Chef" }
-];
+let RECIPIENTS = [];
 
 let SUPPLIERS = [];
 
@@ -1580,21 +1602,16 @@ async function submitRequisition() {
     lines,
   });
 
-  if (recipientEmail && typeof emailjs !== "undefined") {
+  if (recipientEmail) {
     const itemListFormatted = lines.map(l => `- ${l.name}: ${l.qty} ${l.unit}`).join("\n");
-    const emailParams = {
-      to_email: recipientEmail,
-      recipient_name: recipient,
-      ticket_number: ticketNumber,
+    await sendRequisitionEmail({
+      recipientEmail,
+      recipientName: recipient,
+      ticketNumber,
       department: station,
-      items_list: itemListFormatted,
-    };
-    try {
-      await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", emailParams);
-      console.log(`Requisition email sent to ${recipientEmail}`);
-    } catch (emailErr) {
-      console.error("Failed to send requisition email:", emailErr);
-    }
+      neededBy: formattedDate,
+      itemsList: itemListFormatted
+    });
   }
 
   cart = [];
