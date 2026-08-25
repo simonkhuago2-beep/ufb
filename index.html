@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Shop Requisition</title>
+<title>Line Sheet — Kitchen Requisitions</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -57,8 +57,12 @@
   .title { font-family: 'Oswald', sans-serif; font-size: 23px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.4px; }
   .subtitle { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; }
 
-  .toast { position: fixed; top: 22px; right: 28px; background: var(--sage); color: #10190a; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 8px; display: flex; align-items: center; gap: 6px; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
-  .toast.is-visible { opacity: 1; }
+  .toast { position: fixed; top: 22px; right: 28px; background: var(--sage); color: #10190a; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 8px; display: flex; align-items: center; gap: 6px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; transform: translateY(-6px); max-width: 360px; }
+  .toast.is-visible { opacity: 1; transform: translateY(0); }
+  .toast.is-error { background: var(--flame); color: #2a0d06; }
+  .toast-icon-success, .toast-icon-error { display: none; }
+  .toast.is-error .toast-icon-error { display: block; }
+  .toast:not(.is-error) .toast-icon-success { display: block; }
 
   .view { display: none; }
   .view.is-active { display: block; }
@@ -129,6 +133,7 @@
   .submit-btn { display: flex; align-items: center; gap: 8px; background: var(--flame); color: #1a0d06; border: none; font-size: 14px; font-weight: 600; padding: 11px 20px; border-radius: 8px; }
   .submit-btn:hover { filter: brightness(1.08); }
   .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+  .submit-btn.is-loading { opacity: 0.7; pointer-events: none; }
 
   /* ---- ticket (paper) styling — shared by preview + history ---- */
   .ticket-preview-wrap { position: sticky; top: 20px; }
@@ -264,7 +269,8 @@
 
   <main class="main">
     <div class="toast" id="toast">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <svg class="toast-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <svg class="toast-icon-error" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span id="toastText"></span>
     </div>
 
@@ -332,7 +338,7 @@
             <span class="submit-note" id="submitNote">Pick items to see supplier split</span>
             <button class="submit-btn" id="submitReq">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-              Submit requisition
+              <span id="submitReqLabel">Submit requisition</span>
             </button>
           </div>
         </div>
@@ -404,7 +410,7 @@
             <span class="submit-note" id="csvPreviewNote"></span>
             <button class="submit-btn" id="csvImportBtn">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              Import items
+              <span id="csvImportBtnLabel">Import items</span>
             </button>
           </div>
         </div>
@@ -441,7 +447,7 @@
           <span class="submit-note">Recipient will be added to team directory.</span>
           <button class="submit-btn" id="addRecipientBtn" type="button">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            Save Recipient
+            <span id="addRecipientBtnLabel">Save Recipient</span>
           </button>
         </div>
       </div>
@@ -477,7 +483,7 @@
           <span class="submit-note">New suppliers will be available when mapping items.</span>
           <button class="submit-btn" id="addSupplierBtn" type="button">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            Save Supplier
+            <span id="addSupplierBtnLabel">Save Supplier</span>
           </button>
         </div>
       </div>
@@ -527,7 +533,7 @@
           <span class="submit-note">New items appear immediately in Par levels.</span>
           <button class="submit-btn" id="addItemBtn" type="button">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            Add item
+            <span id="addItemBtnLabel">Add item</span>
           </button>
         </div>
       </div>
@@ -561,21 +567,17 @@
 
 <!-----db connection--->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-  // Initialize EmailJS (Replace with your public key from emailjs.com)
-  emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+  if (typeof emailjs !== "undefined") {
+    emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+  }
 </script>
-
 <script>
-  // Initialize Supabase Client
-  const SUPABASE_URL = 'https://ytpaxzjlhhdksruowczv.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_GfhdtnQPrfjeylES2obYsQ_I0_hMRfy';
-
+  const SUPABASE_URL = 'https://your-project-ref.supabase.co';
+  const SUPABASE_ANON_KEY = 'your-anon-public-key-here';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 </script>
-
 <script>
 /* ---------------------------------------------------------------
    Mock data — swap for your inventory system / POS integration.
@@ -585,6 +587,413 @@ const STATIONS = ["Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packa
 const CATEGORIES = ["All", "Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packaging"];
 const ITEM_CATEGORIES = CATEGORIES.filter(c => c !== "All");
 const CSV_COLUMNS = ["name", "category", "unit", "current", "par", "reorder", "supplier"];
+
+/* ---------------- toast helper (success / error) ---------------- */
+
+let toastTimer = null;
+function showToast(text, type = "success") {
+  const toast = document.getElementById("toast");
+  document.getElementById("toastText").textContent = text;
+  toast.classList.toggle("is-error", type === "error");
+  toast.classList.add("is-visible");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), type === "error" ? 3200 : 2000);
+}
+
+function setButtonLoading(btn, labelEl, loadingText, isLoading, restoreText) {
+  if (!btn || !labelEl) return;
+  btn.classList.toggle("is-loading", isLoading);
+  btn.disabled = isLoading;
+  labelEl.textContent = isLoading ? loadingText : restoreText;
+}
+
+/* ---------------- actions: add recipient & supplier details ---------------- */
+
+async function addRecipientDetails() {
+  const name = document.getElementById("newRecipientName").value.trim();
+  const stationVal = document.getElementById("newRecipientDepts").value;
+  const role = document.getElementById("newRecipientRole").value.trim() || "Lead";
+  const contact = document.getElementById("newRecipientContact").value.trim();
+  const errorEl = document.getElementById("newRecipientError");
+  const btn = document.getElementById("addRecipientBtn");
+  const label = document.getElementById("addRecipientBtnLabel");
+
+  errorEl.classList.remove("is-visible");
+
+  if (!name) return showFormError(errorEl, "Enter recipient name.");
+  if (!contact) return showFormError(errorEl, "Enter contact email or phone.");
+
+  setButtonLoading(btn, label, "Saving…", true, "Save Recipient");
+
+  // Insert into Supabase database
+  const { data, error } = await supabase
+    .from("recipients")
+    .insert([
+      {
+        r_name: name,
+        tel: contact,
+        dept: stationVal,
+        role: role
+      }
+    ])
+    .select(); // Returns the newly created row with database ID
+
+  setButtonLoading(btn, label, "Saving…", false, "Save Recipient");
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    showFormError(errorEl, `Failed to save: ${error.message}`);
+    showToast(`Couldn't save recipient "${name}" — ${error.message}`, "error");
+    return;
+  }
+
+  // Update local state with the saved record from database, normalized to
+  // the {name, station, role} shape the rest of the UI (recipient <select>,
+  // station auto-match) expects.
+  if (data && data.length > 0) {
+    const saved = data[0];
+    RECIPIENTS.push({ name: saved.r_name, station: saved.dept, role: saved.role });
+  }
+
+  renderRecipientSelect();
+
+  // Reset input fields
+  document.getElementById("newRecipientName").value = "";
+  document.getElementById("newRecipientRole").value = "";
+  document.getElementById("newRecipientContact").value = "";
+
+  showToast(`Recipient "${name}" saved to database`);
+}
+
+async function addSupplierDetails() {
+  const name = document.getElementById("newSupplierName").value.trim();
+  const contact = document.getElementById("newSupplierContact").value.trim();
+  const tel = document.getElementById("newSupplierInfo") ? document.getElementById("newSupplierInfo").value.trim() : "";
+  const category = document.getElementById("newSupplierCategory") ? document.getElementById("newSupplierCategory").value.trim() : "";
+  const errorEl = document.getElementById("newSupplierError");
+  const btn = document.getElementById("addSupplierBtn");
+  const label = document.getElementById("addSupplierBtnLabel");
+
+  errorEl.classList.remove("is-visible");
+
+  if (!name) return showFormError(errorEl, "Enter supplier name.");
+  if (!contact) return showFormError(errorEl, "Enter contact details.");
+
+  setButtonLoading(btn, label, "Saving…", true, "Save Supplier");
+
+  // Insert into Supabase 'suppliers' database table
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert([
+      {
+        s_name: name,
+        tel: tel,
+        category: category,
+        contact: contact
+      }
+    ])
+    .select();
+
+  setButtonLoading(btn, label, "Saving…", false, "Save Supplier");
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    showFormError(errorEl, `Failed to save: ${error.message}`);
+    showToast(`Couldn't save supplier "${name}" — ${error.message}`, "error");
+    return;
+  }
+
+  if (data && data.length > 0) {
+    SUPPLIERS.push(data[0]);
+  }
+
+  // Clear input fields
+  document.getElementById("newSupplierName").value = "";
+  document.getElementById("newSupplierContact").value = "";
+  if (document.getElementById("newSupplierInfo")) document.getElementById("newSupplierInfo").value = "";
+
+  showToast(`Supplier "${name}" saved to database`);
+}
+
+/* ---------------- actions: add single inventory item ---------------- */
+
+async function addInventoryItem() {
+  const name = document.getElementById("newItemName").value.trim();
+  const cat = document.getElementById("newItemCategory").value;
+  const unit = document.getElementById("newItemUnit").value.trim();
+  const supplier = document.getElementById("newItemSupplier").value.trim();
+  const current = parseFloat(document.getElementById("newItemCurrent").value);
+  const par = parseFloat(document.getElementById("newItemPar").value);
+  const reorder = parseFloat(document.getElementById("newItemReorder").value);
+  const errorEl = document.getElementById("newItemError");
+  const btn = document.getElementById("addItemBtn");
+  const label = document.getElementById("addItemBtnLabel");
+
+  errorEl.classList.remove("is-visible");
+
+  if (!name) return showFormError(errorEl, "Give this item a name.");
+  if (!unit) return showFormError(errorEl, "Add a unit, like lb or case.");
+  if (!supplier) return showFormError(errorEl, "Add a supplier.");
+  if (isNaN(current) || current < 0) return showFormError(errorEl, "On hand needs to be a number, 0 or more.");
+  if (isNaN(par) || par <= 0) return showFormError(errorEl, "Par needs to be a number greater than 0.");
+  if (isNaN(reorder) || reorder < 0) return showFormError(errorEl, "Reorder point needs to be a number, 0 or more.");
+  if (ITEMS.some(i => i.name.toLowerCase() === name.toLowerCase())) {
+    return showFormError(errorEl, `"${name}" is already tracked. Update it from Par levels instead.`);
+  }
+
+  setButtonLoading(btn, label, "Saving…", true, "Add item");
+
+  // Insert record into Supabase 'inventory' table
+  const { data, error } = await supabase
+    .from("inventory")
+    .insert([
+      {
+        name: name,
+        category: cat,
+        unit: unit,
+        current: current,
+        par: par,
+        reorder: reorder,
+        supplier: supplier
+      }
+    ])
+    .select();
+
+  setButtonLoading(btn, label, "Saving…", false, "Add item");
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    showFormError(errorEl, `Failed to save: ${error.message}`);
+    showToast(`Couldn't add "${name}" — ${error.message}`, "error");
+    return;
+  }
+
+  // Push the row returned by Supabase (includes auto-generated DB id) into local array
+  if (data && data.length > 0) {
+    ITEMS.push(data[0]);
+  }
+
+  // Reset form fields
+  document.getElementById("newItemName").value = "";
+  document.getElementById("newItemUnit").value = "";
+  document.getElementById("newItemSupplier").value = "";
+  document.getElementById("newItemCurrent").value = "";
+  document.getElementById("newItemPar").value = "";
+  document.getElementById("newItemReorder").value = "";
+
+  showToast(`"${name}" saved to database`);
+  renderDashboard();
+  renderItemPicker();
+}
+
+function showFormError(el, message) {
+  el.textContent = message;
+  el.classList.add("is-visible");
+}
+
+/* ---------------- actions: CSV import ---------------- */
+
+function parseCSVLine(line) {
+  const cells = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { cells.push(cur); cur = ""; }
+      else cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells.map(c => c.trim());
+}
+
+function parseInventoryCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 2) {
+    return { rows: [], errors: ["The file needs a header row plus at least one item."] };
+  }
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+  const missing = CSV_COLUMNS.filter(c => !headers.includes(c));
+  if (missing.length) {
+    return { rows: [], errors: [`Missing column${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`] };
+  }
+
+  const rows = [];
+  const errors = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = parseCSVLine(lines[i]);
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = cells[idx] !== undefined ? cells[idx] : ""; });
+
+    if (!row.name) { errors.push(`Row ${i + 1}: missing item name.`); continue; }
+
+    const current = parseFloat(row.current);
+    const par = parseFloat(row.par);
+    const reorder = parseFloat(row.reorder);
+    if (isNaN(current) || isNaN(par) || isNaN(reorder)) {
+      errors.push(`Row ${i + 1} (${row.name}): current, par, and reorder must be numbers.`);
+      continue;
+    }
+
+    let cat = row.category && ITEM_CATEGORIES.includes(toTitleCategory(row.category))
+      ? toTitleCategory(row.category)
+      : (row.category || "Dry Items");
+    if (!ITEM_CATEGORIES.includes(cat)) cat = "Dry Items";
+
+    rows.push({
+      name: row.name,
+      category: cat,
+      unit: row.unit || "unit",
+      current, par, reorder,
+      supplier: row.supplier || "Unassigned",
+    });
+  }
+  return { rows, errors };
+}
+
+function toTitleCategory(val) {
+  const map = {};
+  ITEM_CATEGORIES.forEach(c => { map[c.toLowerCase()] = c; });
+  return map[val.trim().toLowerCase()] || val;
+}
+
+function renderCSVPreview() {
+  const wrap = document.getElementById("csvPreviewWrap");
+  const body = document.getElementById("csvPreviewBody");
+  const note = document.getElementById("csvPreviewNote");
+
+  if (csvPendingRows.length === 0) {
+    wrap.style.display = "none";
+    return;
+  }
+
+  wrap.style.display = "block";
+  body.innerHTML = csvPendingRows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.category)}</td>
+      <td>${escapeHtml(r.unit)}</td>
+      <td>${r.current}</td>
+      <td>${r.par}</td>
+      <td>${r.reorder}</td>
+      <td>${escapeHtml(r.supplier)}</td>
+    </tr>
+  `).join("");
+  note.textContent = `${csvPendingRows.length} item${csvPendingRows.length === 1 ? "" : "s"} ready to import`;
+}
+
+function handleCSVFile(file) {
+  document.getElementById("csvFileName").textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const { rows, errors } = parseInventoryCSV(String(reader.result));
+    csvPendingRows = rows;
+
+    const errorsEl = document.getElementById("csvErrors");
+    errorsEl.innerHTML = errors.map(e => `<div class="error-line">${escapeHtml(e)}</div>`).join("");
+
+    renderCSVPreview();
+  };
+  reader.onerror = () => {
+    document.getElementById("csvErrors").innerHTML = `<div class="error-line">Couldn't read that file. Try again.</div>`;
+    showToast("Couldn't read that file — try again", "error");
+  };
+  reader.readAsText(file);
+}
+
+async function importCSVRows() {
+  if (csvPendingRows.length === 0) return;
+
+  const btn = document.getElementById("csvImportBtn");
+  const label = document.getElementById("csvImportBtnLabel");
+  setButtonLoading(btn, label, "Importing…", true, "Import items");
+
+  let added = 0;
+  let merged = 0;
+  const failedRows = [];
+
+  // Sequential (not Promise.all) so a slow/rate-limited request doesn't
+  // fire dozens of simultaneous inserts, and so we can attribute each
+  // failure back to the row that caused it.
+  for (const r of csvPendingRows) {
+    const existing = ITEMS.find(i => i.name.toLowerCase() === r.name.toLowerCase());
+    if (existing) {
+      const { error } = await supabase
+        .from("inventory")
+        .update({
+          current: r.current,
+          par: r.par,
+          reorder: r.reorder,
+          unit: r.unit,
+          supplier: r.supplier,
+          category: r.category,
+        })
+        .eq("id", existing.id);
+      if (!error) {
+        Object.assign(existing, r);
+        merged++;
+      } else {
+        console.error("Supabase update error:", error);
+        failedRows.push({ name: r.name, message: error.message });
+      }
+    } else {
+      const { data, error } = await supabase.from("inventory").insert([r]).select();
+      if (!error && data && data[0]) {
+        ITEMS.push(data[0]);
+        added++;
+      } else if (error) {
+        console.error("Supabase insert error:", error);
+        failedRows.push({ name: r.name, message: error.message });
+      }
+    }
+  }
+
+  setButtonLoading(btn, label, "Importing…", false, "Import items");
+
+  csvPendingRows = [];
+  document.getElementById("csvPreviewWrap").style.display = "none";
+  document.getElementById("csvFileName").textContent = "No file selected";
+  document.getElementById("csvFileInput").value = "";
+
+  const successParts = [];
+  if (added) successParts.push(`${added} added`);
+  if (merged) successParts.push(`${merged} updated`);
+
+  const errorsEl = document.getElementById("csvErrors");
+  if (failedRows.length > 0) {
+    errorsEl.innerHTML = failedRows
+      .map(f => `<div class="error-line">"${escapeHtml(f.name)}" failed to save: ${escapeHtml(f.message)}</div>`)
+      .join("");
+    const summary = successParts.length ? `${successParts.join(", ")}, ${failedRows.length} failed` : `${failedRows.length} item${failedRows.length === 1 ? "" : "s"} failed to import`;
+    showToast(summary, "error");
+  } else {
+    errorsEl.innerHTML = "";
+    showToast(successParts.join(", ") || "Import complete");
+  }
+
+  renderDashboard();
+  renderItemPicker();
+}
+
+function downloadCSVTemplate() {
+  const header = CSV_COLUMNS.join(",");
+  const sample = "Cherry tomatoes,Vegetables,lb,10,30,12,Fresh Fields Produce";
+  const blob = new Blob([header + "\n" + sample + "\n"], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "inventory-template.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 let RECIPIENTS = [
   { name: "Marcus T.", station: "Proteins", role: "Head Chef" },
@@ -606,7 +1015,7 @@ async function fetchRecipients() {
 
   if (error) {
     console.error("Error fetching recipients:", error);
-    showToast("Failed to load recipients from database");
+    showToast("Couldn't load recipients from the database", "error");
     return;
   }
 
@@ -629,7 +1038,7 @@ async function fetchInventoryItems() {
 
   if (error) {
     console.error("Error fetching inventory items:", error);
-    showToast("Failed to load inventory from database");
+    showToast("Couldn't load inventory from the database", "error");
     return;
   }
 
@@ -727,11 +1136,11 @@ function renderRecipientSelect() {
   autoSelectRecipientForStation();
 }
 
-/* customRecipientInput used to be a free-text field. It's now a <select>
-   sourced from the same RECIPIENTS directory (loaded from Supabase via
-   fetchRecipients), so picking "Other Recipient" still only lets someone
-   choose a name that actually exists in the recipients table — not type
-   an arbitrary string. Keep it in sync any time RECIPIENTS changes. */
+/* customRecipientInput is a <select> sourced from the same RECIPIENTS
+   directory (loaded from Supabase via fetchRecipients), so picking
+   "Other Recipient" still only lets someone choose a name that actually
+   exists in the recipients table — not type an arbitrary string. Keep it
+   in sync any time RECIPIENTS changes. */
 function renderCustomRecipientSelect() {
   const sel = document.getElementById("customRecipientInput");
   if (!sel) return;
@@ -1028,6 +1437,8 @@ async function saveTicketStatus() {
   if (!ticket) return;
 
   const newStatus = document.getElementById("modalStatusSelect").value;
+  const previousStatus = ticket.status;
+  const previousLines = ticket.lines.map(l => ({ ...l }));
   ticket.status = newStatus;
 
   if (newStatus === "Fulfilled") {
@@ -1044,13 +1455,22 @@ async function saveTicketStatus() {
 
   // Persist the status + line-item pending flags back to Supabase.
   if (ticket.dbId) {
+    const modalSaveBtn = document.getElementById("modalSaveBtn");
+    modalSaveBtn.disabled = true;
     const { error } = await supabase
       .from("requisitions")
       .update({ status: newStatus, items: ticket.lines })
       .eq("id", ticket.dbId);
+    modalSaveBtn.disabled = false;
+
     if (error) {
       console.error("Error updating requisition status:", error);
-      showToast("Failed to save status change");
+      // Roll back the optimistic local change so the UI matches the DB.
+      ticket.status = previousStatus;
+      ticket.lines = previousLines;
+      showToast(`Failed to save status change — ${error.message}`, "error");
+      renderTickets();
+      return;
     }
   }
 
@@ -1103,13 +1523,16 @@ function removeLine(id) {
 }
 
 /* Build+save a requisition, persist to Supabase, and email the recipient
-   if we have an address on file. This replaces the two separate
-   (and conflicting) submitRequisition() implementations that used to
-   exist here — there is now exactly one. */
+   if we have an address on file. There is exactly one implementation of
+   this function — no conflicting duplicates. */
 async function submitRequisition() {
   const neededBy = document.getElementById("neededByInput").value;
   const recipient = getSelectedRecipientName();
   const errorEl = document.getElementById("reqError");
+  const btn = document.getElementById("submitReq");
+  const label = document.getElementById("submitReqLabel");
+
+  errorEl.classList.remove("is-visible");
 
   if (!recipient || recipient === "Unassigned") {
     errorEl.textContent = "Please select or specify a recipient lead.";
@@ -1126,7 +1549,8 @@ async function submitRequisition() {
     errorEl.classList.add("is-visible");
     return;
   }
-  errorEl.classList.remove("is-visible");
+
+  setButtonLoading(btn, label, "Submitting…", true, "Submit requisition");
 
   const formattedDate = new Date(neededBy + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const ticketNumber = `REQ-${Date.now().toString().slice(-4)}`;
@@ -1163,10 +1587,13 @@ async function submitRequisition() {
     .insert([newTicket])
     .select();
 
+  setButtonLoading(btn, label, "Submitting…", false, "Submit requisition");
+
   if (error) {
     console.error("Error saving requisition:", error);
     errorEl.textContent = "Failed to save requisition to database.";
     errorEl.classList.add("is-visible");
+    showToast(`Requisition failed to save — ${error.message}`, "error");
     return;
   }
 
@@ -1184,7 +1611,7 @@ async function submitRequisition() {
   });
 
   // 4. Email the recipient, if we found an address for them.
-  if (recipientEmail) {
+  if (recipientEmail && typeof emailjs !== "undefined") {
     const itemListFormatted = lines.map(l => `- ${l.name}: ${l.qty} ${l.unit}`).join("\n");
     const emailParams = {
       to_email: recipientEmail,
@@ -1203,11 +1630,13 @@ async function submitRequisition() {
     }
   }
 
-  // 5. Reset local cart/form state and refresh the History view from Supabase
-  //    (falls back to the optimistic entry above if the refetch fails).
+  // 5. Reset local cart/form state, refresh History from Supabase (falls
+  //    back to the optimistic entry above if the refetch fails), and
+  //    give a clear success signal before switching views.
   cart = [];
   document.getElementById("neededByInput").value = "";
   renderCart();
+  showToast(`Requisition ${ticketNumber} submitted`);
   await fetchRequisitions();
   switchView("history");
 }
@@ -1223,6 +1652,7 @@ async function fetchRequisitions() {
 
   if (error) {
     console.error("Error fetching requisitions:", error);
+    showToast("Couldn't load requisition history from the database", "error");
     return;
   }
 
@@ -1263,356 +1693,7 @@ async function initApp() {
   renderTickets();
 }
 
-/* ---------------- actions: add recipient & supplier details ---------------- */
-
-async function addRecipientDetails() {
-  const name = document.getElementById("newRecipientName").value.trim();
-  const stationVal = document.getElementById("newRecipientDepts").value;
-  const role = document.getElementById("newRecipientRole").value.trim() || "Lead";
-  const contact = document.getElementById("newRecipientContact").value.trim();
-  const errorEl = document.getElementById("newRecipientError");
-
-  if (!name) return showFormError(errorEl, "Enter recipient name.");
-  if (!contact) return showFormError(errorEl, "Enter contact email or phone.");
-
-  errorEl.classList.remove("is-visible");
-
-  // Insert into Supabase database
-  const { data, error } = await supabase
-    .from("recipients")
-    .insert([
-      {
-        r_name: name,
-        tel: contact,
-        dept: stationVal,
-        role: role
-      }
-    ])
-    .select(); // Returns the newly created row with database ID
-
-  if (error) {
-    console.error("Supabase Error:", error);
-    return showFormError(errorEl, `Failed to save: ${error.message}`);
-  }
-
-  // Update local state with the saved record from database, normalized to
-  // the {name, station, role} shape the rest of the UI (recipient <select>,
-  // station auto-match) expects.
-  if (data && data.length > 0) {
-    const saved = data[0];
-    RECIPIENTS.push({ name: saved.r_name, station: saved.dept, role: saved.role });
-  }
-
-  renderRecipientSelect();
-
-  // Reset input fields
-  document.getElementById("newRecipientName").value = "";
-  document.getElementById("newRecipientRole").value = "";
-  document.getElementById("newRecipientContact").value = "";
-
-  showToast(`Recipient ${name} added successfully`);
-}
-
-async function addSupplierDetails() {
-  const name = document.getElementById("newSupplierName").value.trim();
-  const contact = document.getElementById("newSupplierContact").value.trim();
-  const tel = document.getElementById("newSupplierInfo") ? document.getElementById("newSupplierInfo").value.trim() : "";
-  const category = document.getElementById("newSupplierCategory") ? document.getElementById("newSupplierCategory").value.trim() : "";
-  const errorEl = document.getElementById("newSupplierError");
-
-  if (!name) return showFormError(errorEl, "Enter supplier name.");
-  if (!contact) return showFormError(errorEl, "Enter contact details.");
-
-  errorEl.classList.remove("is-visible");
-
-  // Insert into Supabase 'suppliers' database table
-  const { data, error } = await supabase
-    .from("suppliers")
-    .insert([
-      {
-        s_name: name,
-        tel: tel,
-        category: category,
-        contact: contact
-      }
-    ])
-    .select();
-
-  if (error) {
-    console.error("Supabase Error:", error);
-    return showFormError(errorEl, `Failed to save: ${error.message}`);
-  }
-
-  if (data && data.length > 0) {
-    SUPPLIERS.push(data[0]);
-  }
-
-  // Clear input fields
-  document.getElementById("newSupplierName").value = "";
-  document.getElementById("newSupplierContact").value = "";
-  if (document.getElementById("newSupplierInfo")) document.getElementById("newSupplierInfo").value = "";
-
-  showToast(`Supplier ${name} added successfully`);
-}
-
-/* ---------------- actions: add single inventory item ---------------- */
-
-async function addInventoryItem() {
-  const name = document.getElementById("newItemName").value.trim();
-  const cat = document.getElementById("newItemCategory").value;
-  const unit = document.getElementById("newItemUnit").value.trim();
-  const supplier = document.getElementById("newItemSupplier").value.trim();
-  const current = parseFloat(document.getElementById("newItemCurrent").value);
-  const par = parseFloat(document.getElementById("newItemPar").value);
-  const reorder = parseFloat(document.getElementById("newItemReorder").value);
-  const errorEl = document.getElementById("newItemError");
-
-  if (!name) return showFormError(errorEl, "Give this item a name.");
-  if (!unit) return showFormError(errorEl, "Add a unit, like lb or case.");
-  if (!supplier) return showFormError(errorEl, "Add a supplier.");
-  if (isNaN(current) || current < 0) return showFormError(errorEl, "On hand needs to be a number, 0 or more.");
-  if (isNaN(par) || par <= 0) return showFormError(errorEl, "Par needs to be a number greater than 0.");
-  if (isNaN(reorder) || reorder < 0) return showFormError(errorEl, "Reorder point needs to be a number, 0 or more.");
-  if (ITEMS.some(i => i.name.toLowerCase() === name.toLowerCase())) {
-    return showFormError(errorEl, `"${name}" is already tracked. Update it from Par levels instead.`);
-  }
-
-  errorEl.classList.remove("is-visible");
-
-  // Insert record into Supabase 'inventory' table
-  const { data, error } = await supabase
-    .from("inventory")
-    .insert([
-      {
-        name: name,
-        category: cat,
-        unit: unit,
-        current: current,
-        par: par,
-        reorder: reorder,
-        supplier: supplier
-      }
-    ])
-    .select();
-
-  if (error) {
-    console.error("Supabase Error:", error);
-    return showFormError(errorEl, `Failed to save: ${error.message}`);
-  }
-
-  // Push the row returned by Supabase (includes auto-generated DB id) into local array
-  if (data && data.length > 0) {
-    ITEMS.push(data[0]);
-  }
-
-  // Reset form fields
-  document.getElementById("newItemName").value = "";
-  document.getElementById("newItemUnit").value = "";
-  document.getElementById("newItemSupplier").value = "";
-  document.getElementById("newItemCurrent").value = "";
-  document.getElementById("newItemPar").value = "";
-  document.getElementById("newItemReorder").value = "";
-
-  showToast(`${name} added to inventory`);
-  renderDashboard();
-  renderItemPicker();
-}
-
-function showFormError(el, message) {
-  el.textContent = message;
-  el.classList.add("is-visible");
-}
-
-/* ---------------- actions: CSV import ---------------- */
-
-function parseCSVLine(line) {
-  const cells = [];
-  let cur = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQuotes) {
-      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
-      else if (ch === '"') { inQuotes = false; }
-      else { cur += ch; }
-    } else {
-      if (ch === '"') inQuotes = true;
-      else if (ch === ',') { cells.push(cur); cur = ""; }
-      else cur += ch;
-    }
-  }
-  cells.push(cur);
-  return cells.map(c => c.trim());
-}
-
-function parseInventoryCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) {
-    return { rows: [], errors: ["The file needs a header row plus at least one item."] };
-  }
-  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
-  const missing = CSV_COLUMNS.filter(c => !headers.includes(c));
-  if (missing.length) {
-    return { rows: [], errors: [`Missing column${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`] };
-  }
-
-  const rows = [];
-  const errors = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cells = parseCSVLine(lines[i]);
-    const row = {};
-    headers.forEach((h, idx) => { row[h] = cells[idx] !== undefined ? cells[idx] : ""; });
-
-    if (!row.name) { errors.push(`Row ${i + 1}: missing item name.`); continue; }
-
-    const current = parseFloat(row.current);
-    const par = parseFloat(row.par);
-    const reorder = parseFloat(row.reorder);
-    if (isNaN(current) || isNaN(par) || isNaN(reorder)) {
-      errors.push(`Row ${i + 1} (${row.name}): current, par, and reorder must be numbers.`);
-      continue;
-    }
-
-    let cat = row.category && ITEM_CATEGORIES.includes(toTitleCategory(row.category))
-      ? toTitleCategory(row.category)
-      : (row.category || "Dry Items");
-    if (!ITEM_CATEGORIES.includes(cat)) cat = "Dry Items";
-
-    rows.push({
-      name: row.name,
-      category: cat,
-      unit: row.unit || "unit",
-      current, par, reorder,
-      supplier: row.supplier || "Unassigned",
-    });
-  }
-  return { rows, errors };
-}
-
-function toTitleCategory(val) {
-  const map = {};
-  ITEM_CATEGORIES.forEach(c => { map[c.toLowerCase()] = c; });
-  return map[val.trim().toLowerCase()] || val;
-}
-
-function renderCSVPreview() {
-  const wrap = document.getElementById("csvPreviewWrap");
-  const body = document.getElementById("csvPreviewBody");
-  const note = document.getElementById("csvPreviewNote");
-
-  if (csvPendingRows.length === 0) {
-    wrap.style.display = "none";
-    return;
-  }
-
-  wrap.style.display = "block";
-  body.innerHTML = csvPendingRows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.category)}</td>
-      <td>${escapeHtml(r.unit)}</td>
-      <td>${r.current}</td>
-      <td>${r.par}</td>
-      <td>${r.reorder}</td>
-      <td>${escapeHtml(r.supplier)}</td>
-    </tr>
-  `).join("");
-  note.textContent = `${csvPendingRows.length} item${csvPendingRows.length === 1 ? "" : "s"} ready to import`;
-}
-
-function handleCSVFile(file) {
-  document.getElementById("csvFileName").textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const { rows, errors } = parseInventoryCSV(String(reader.result));
-    csvPendingRows = rows;
-
-    const errorsEl = document.getElementById("csvErrors");
-    errorsEl.innerHTML = errors.map(e => `<div class="error-line">${escapeHtml(e)}</div>`).join("");
-
-    renderCSVPreview();
-  };
-  reader.onerror = () => {
-    document.getElementById("csvErrors").innerHTML = `<div class="error-line">Couldn't read that file. Try again.</div>`;
-  };
-  reader.readAsText(file);
-}
-
-async function importCSVRows() {
-  if (csvPendingRows.length === 0) return;
-  let added = 0;
-  let merged = 0;
-
-  for (const r of csvPendingRows) {
-    const existing = ITEMS.find(i => i.name.toLowerCase() === r.name.toLowerCase());
-    if (existing) {
-      const { error } = await supabase
-        .from("inventory")
-        .update({
-          current: r.current,
-          par: r.par,
-          reorder: r.reorder,
-          unit: r.unit,
-          supplier: r.supplier,
-          category: r.category,
-        })
-        .eq("id", existing.id);
-      if (!error) {
-        Object.assign(existing, r);
-        merged++;
-      } else {
-        console.error("Supabase update error:", error);
-      }
-    } else {
-      const { data, error } = await supabase.from("inventory").insert([r]).select();
-      if (!error && data && data[0]) {
-        ITEMS.push(data[0]);
-        added++;
-      } else if (error) {
-        console.error("Supabase insert error:", error);
-      }
-    }
-  }
-
-  csvPendingRows = [];
-  document.getElementById("csvPreviewWrap").style.display = "none";
-  document.getElementById("csvErrors").innerHTML = "";
-  document.getElementById("csvFileName").textContent = "No file selected";
-  document.getElementById("csvFileInput").value = "";
-
-  const parts = [];
-  if (added) parts.push(`${added} added`);
-  if (merged) parts.push(`${merged} updated`);
-  showToast(parts.join(", ") || "Import complete");
-
-  renderDashboard();
-  renderItemPicker();
-}
-
-function downloadCSVTemplate() {
-  const header = CSV_COLUMNS.join(",");
-  const sample = "Cherry tomatoes,Vegetables,lb,10,30,12,Fresh Fields Produce";
-  const blob = new Blob([header + "\n" + sample + "\n"], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "inventory-template.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-/* ---------------- toast + view switching ---------------- */
-
-let toastTimer = null;
-function showToast(text) {
-  const toast = document.getElementById("toast");
-  document.getElementById("toastText").textContent = text;
-  toast.classList.add("is-visible");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 1800);
-}
+/* ---------------- view switching ---------------- */
 
 function switchView(view) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("is-active"));
