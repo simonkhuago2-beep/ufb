@@ -822,7 +822,7 @@ async function sendRequisitionEmail(details) {
   };
 
   try {
-    const response = await emailjs.send("service_zfld4ro", "template_sgy6nl9", templateParams);
+    const response = await emailjs.send("service_eni2kfs", "template_sgy6nl9", templateParams);
     console.log("Purchase Request email dispatched successfully:", response.status, response.text);
     return true;
   } catch (err) {
