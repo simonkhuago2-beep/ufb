@@ -576,7 +576,7 @@
 <script>
   const SUPABASE_URL = 'https://ytpaxzjlhhdksruowczv.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_GfhdtnQPrfjeylES2obYsQ_I0_hMRfy';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <script>
 /* ---------------------------------------------------------------
@@ -625,8 +625,8 @@ async function addRecipientDetails() {
 
   setButtonLoading(btn, label, "Saving…", true, "Save Recipient");
 
-  // Insert into Supabase database
-  const { data, error } = await supabase
+  // Insert into Supabase database using supabaseClient
+  const { data, error } = await supabaseClient
     .from("recipients")
     .insert([
       {
@@ -636,7 +636,7 @@ async function addRecipientDetails() {
         role: role
       }
     ])
-    .select(); // Returns the newly created row with database ID
+    .select();
 
   setButtonLoading(btn, label, "Saving…", false, "Save Recipient");
 
@@ -647,9 +647,6 @@ async function addRecipientDetails() {
     return;
   }
 
-  // Update local state with the saved record from database, normalized to
-  // the {name, station, role} shape the rest of the UI (recipient <select>,
-  // station auto-match) expects.
   if (data && data.length > 0) {
     const saved = data[0];
     RECIPIENTS.push({ name: saved.r_name, station: saved.dept, role: saved.role });
@@ -682,7 +679,7 @@ async function addSupplierDetails() {
   setButtonLoading(btn, label, "Saving…", true, "Save Supplier");
 
   // Insert into Supabase 'suppliers' database table
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("suppliers")
     .insert([
       {
@@ -744,7 +741,7 @@ async function addInventoryItem() {
   setButtonLoading(btn, label, "Saving…", true, "Add item");
 
   // Insert record into Supabase 'inventory' table
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("inventory")
     .insert([
       {
@@ -768,7 +765,6 @@ async function addInventoryItem() {
     return;
   }
 
-  // Push the row returned by Supabase (includes auto-generated DB id) into local array
   if (data && data.length > 0) {
     ITEMS.push(data[0]);
   }
@@ -918,13 +914,10 @@ async function importCSVRows() {
   let merged = 0;
   const failedRows = [];
 
-  // Sequential (not Promise.all) so a slow/rate-limited request doesn't
-  // fire dozens of simultaneous inserts, and so we can attribute each
-  // failure back to the row that caused it.
   for (const r of csvPendingRows) {
     const existing = ITEMS.find(i => i.name.toLowerCase() === r.name.toLowerCase());
     if (existing) {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from("inventory")
         .update({
           current: r.current,
@@ -943,7 +936,7 @@ async function importCSVRows() {
         failedRows.push({ name: r.name, message: error.message });
       }
     } else {
-      const { data, error } = await supabase.from("inventory").insert([r]).select();
+      const { data, error } = await supabaseClient.from("inventory").insert([r]).select();
       if (!error && data && data[0]) {
         ITEMS.push(data[0]);
         added++;
@@ -1004,11 +997,8 @@ let RECIPIENTS = [
 
 let SUPPLIERS = [];
 
-/* Load the full recipient directory from Supabase. Falls back to keeping
-   whatever is already in RECIPIENTS (the local mock list) if the fetch
-   fails, so the UI never ends up empty. */
 async function fetchRecipients() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("recipients")
     .select("*")
     .order("r_name", { ascending: true });
@@ -1031,7 +1021,7 @@ async function fetchRecipients() {
 // live sync from supabase db
 let ITEMS = [];
 async function fetchInventoryItems() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("inventory")
     .select("*")
     .order("id", { ascending: true });
@@ -1042,10 +1032,8 @@ async function fetchInventoryItems() {
     return;
   }
 
-  // Populate global ITEMS array with database records
   ITEMS = data || [];
 
-  // Re-render UI components dependent on inventory data
   renderDashboard();
   renderItemPicker();
 }
@@ -1136,11 +1124,6 @@ function renderRecipientSelect() {
   autoSelectRecipientForStation();
 }
 
-/* customRecipientInput is a <select> sourced from the same RECIPIENTS
-   directory (loaded from Supabase via fetchRecipients), so picking
-   "Other Recipient" still only lets someone choose a name that actually
-   exists in the recipients table — not type an arbitrary string. Keep it
-   in sync any time RECIPIENTS changes. */
 function renderCustomRecipientSelect() {
   const sel = document.getElementById("customRecipientInput");
   if (!sel) return;
@@ -1399,8 +1382,6 @@ function openStatusModal(id) {
 
   document.getElementById("modalTicketId").textContent = `Update ${ticket.id}`;
   const select = document.getElementById("modalStatusSelect");
-  // Newly-inserted Supabase rows start life as "Pending" before anyone
-  // has triaged them — treat that the same as "Submitted" in the UI.
   select.value = ticket.status === "Pending" ? "Submitted" : ticket.status;
 
   renderModalItemsList(ticket);
@@ -1453,11 +1434,10 @@ async function saveTicketStatus() {
     });
   }
 
-  // Persist the status + line-item pending flags back to Supabase.
   if (ticket.dbId) {
     const modalSaveBtn = document.getElementById("modalSaveBtn");
     modalSaveBtn.disabled = true;
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from("requisitions")
       .update({ status: newStatus, items: ticket.lines })
       .eq("id", ticket.dbId);
@@ -1465,7 +1445,6 @@ async function saveTicketStatus() {
 
     if (error) {
       console.error("Error updating requisition status:", error);
-      // Roll back the optimistic local change so the UI matches the DB.
       ticket.status = previousStatus;
       ticket.lines = previousLines;
       showToast(`Failed to save status change — ${error.message}`, "error");
@@ -1522,9 +1501,6 @@ function removeLine(id) {
   renderCart();
 }
 
-/* Build+save a requisition, persist to Supabase, and email the recipient
-   if we have an address on file. There is exactly one implementation of
-   this function — no conflicting duplicates. */
 async function submitRequisition() {
   const neededBy = document.getElementById("neededByInput").value;
   const recipient = getSelectedRecipientName();
@@ -1556,11 +1532,8 @@ async function submitRequisition() {
   const ticketNumber = `REQ-${Date.now().toString().slice(-4)}`;
   const lines = cart.map(l => ({ name: l.name, qty: l.qty, unit: l.unit, pending: true }));
 
-  // 1. Look up the recipient's email address, if we have one on file.
-  //    RECIPIENTS rows saved via addRecipientDetails() use the "tel"
-  //    column for contact info and "r_name" for the name — match both here.
   let recipientEmail = "";
-  const { data: recipientData, error: recipientLookupError } = await supabase
+  const { data: recipientData, error: recipientLookupError } = await supabaseClient
     .from("recipients")
     .select("tel")
     .eq("r_name", recipient)
@@ -1581,8 +1554,7 @@ async function submitRequisition() {
     status: "Submitted",
   };
 
-  // 2. Insert requisition into Supabase.
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("requisitions")
     .insert([newTicket])
     .select();
@@ -1597,8 +1569,6 @@ async function submitRequisition() {
     return;
   }
 
-  // 3. Optimistically update the local ticket list so History reflects
-  //    the new requisition immediately, in the shape renderTickets() expects.
   const savedRow = data && data[0] ? data[0] : {};
   tickets.unshift({
     id: ticketNumber,
@@ -1610,7 +1580,6 @@ async function submitRequisition() {
     lines,
   });
 
-  // 4. Email the recipient, if we found an address for them.
   if (recipientEmail && typeof emailjs !== "undefined") {
     const itemListFormatted = lines.map(l => `- ${l.name}: ${l.qty} ${l.unit}`).join("\n");
     const emailParams = {
@@ -1621,18 +1590,13 @@ async function submitRequisition() {
       items_list: itemListFormatted,
     };
     try {
-      // Replace SERVICE_ID and TEMPLATE_ID with your EmailJS credentials.
       await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", emailParams);
       console.log(`Requisition email sent to ${recipientEmail}`);
     } catch (emailErr) {
       console.error("Failed to send requisition email:", emailErr);
-      // Non-fatal: the requisition itself is already saved.
     }
   }
 
-  // 5. Reset local cart/form state, refresh History from Supabase (falls
-  //    back to the optimistic entry above if the refetch fails), and
-  //    give a clear success signal before switching views.
   cart = [];
   document.getElementById("neededByInput").value = "";
   renderCart();
@@ -1641,11 +1605,8 @@ async function submitRequisition() {
   switchView("history");
 }
 
-/* Pull requisitions from Supabase and normalize them into the shape
-   renderTickets()/openStatusModal() expect: {id, dbId, station, recipient,
-   neededBy, status, lines: [{name, qty, unit, pending}]}. */
 async function fetchRequisitions() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("requisitions")
     .select("*")
     .order("created_at", { ascending: false });
@@ -1679,13 +1640,9 @@ async function initApp() {
   renderItemCategorySelect();
   renderRecipientAndSupplierSelects();
 
-  // Load the recipient directory from Supabase first so both the main
-  // recipient select and the "Other Recipient" select are populated
-  // with real data, not just the local mock list.
   await fetchRecipients();
   renderRecipientSelect();
 
-  // Load remaining data from Supabase
   await fetchInventoryItems();
   await fetchRequisitions();
 
