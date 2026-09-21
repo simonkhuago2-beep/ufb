@@ -54,7 +54,7 @@
   /* ---- main ---- */
   .main { flex: 1; padding: 28px 32px 60px; max-width: 1220px; position: relative; }
   .main-head { margin-bottom: 20px; }
-  .title { font-family: 'Oswald', sans-serif; font-size: 23px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.4px; }
+  .title { font-family: 'Oswald', sans-serif; font-size: 23px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.4px; color: #676A5F; }
   .subtitle { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; }
 
   .toast { position: fixed; top: 22px; right: 28px; background: var(--sage); color: #10190a; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 8px; display: flex; align-items: center; gap: 6px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; transform: translateY(-6px); max-width: 360px; }
@@ -217,15 +217,32 @@
 </style>
 </head>
 <body>
+  <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; box-sizing: border-box; border-bottom: 1px solid #ffffff; background-color: #eb5c24;">
+    <!-- Logo / Brand on the left -->
+    <div style="display: flex; align-items: center; width: 120px;">
+      <span class="brand-mark"></span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+      </span>
+      <!-- <img src="logo.png" alt="Logo" style="height: 32px; width: auto;" /> -->
+    </div>
+  
+    <!-- Main Header Title centered -->
+    <h1 style="margin: 0; font-size: 1.25rem; font-weight: 600; text-align: center; flex: 1;">
+      Purchases & Requisition
+    </h1>
+  
+    <!-- Spacer to keep the title perfectly centered -->
+    <div style="width: 120px;"></div>
+  </header>
 
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">
+    <!-- <div class="brand">
       <span class="brand-mark">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
       </span>
       <span class="brand-name">Requisitions</span>
-    </div>
+    </div> -->
 
     <button class="nav-item is-active" data-view="dashboard">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -1584,7 +1601,7 @@ function renderCartGeneric(config) {
           <div class="cart-supplier">${escapeHtml(line.supplier)}</div>
         </div>
         <div class="stepper">
-          <span class="cart-avail">Qty Avails</span>
+          <span class="cart-avail">Qty Avail</span>
           <button data-dec="${line.id}" data-type="${type}" aria-label="Decrease ${escapeHtml(line.name)}">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
           </button>
