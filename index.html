@@ -122,6 +122,7 @@
   .stepper button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-raised); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
   .stepper button:hover { color: var(--flame); border-color: var(--flame); }
   .cart-unit { color: var(--text-dim); }
+  .cart-avail { color: var(--text-dim); }
   .remove-btn { background: transparent; border: none; color: var(--text-dim); display: flex; }
   .remove-btn:hover { color: var(--flame); }
 
@@ -768,6 +769,7 @@
         <option value="Approved">Approved</option>
         <option value="Partial">Partial</option>
         <option value="Fulfilled">Fulfilled</option>
+        <option value="Declined">Declined</option>
       </select>
     </div>
     <div class="field" id="modalItemsField" style="display:none;">
@@ -1300,6 +1302,10 @@ let tickets = [
     id: "REQ-1039", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Partial",
     lines: [ { name: "House red wine", qty: 12, unit: "btl", pending: false }, { name: "Sparkling water", qty: 10, unit: "case", pending: true } ],
   },
+  {
+    id: "REQ-1042", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Declined",
+    lines: [ { name: "House red wine", qty: 12, unit: "btl", pending: false }, { name: "Sparkling water", qty: 10, unit: "case", pending: true } ],
+  },
 ];
 
 // Requisition Carts
@@ -1325,6 +1331,7 @@ const TICKET_STATUS_COLORS = {
   Approved: { bg: "rgba(124,141,181,0.18)", fg: "#9AABD1" },
   Fulfilled: { bg: "rgba(124,154,93,0.18)", fg: "#9BC178" },
   Partial: { bg: "rgba(225,81,43,0.16)", fg: "#E1512B" },
+  Declined: { bg: "rgba(124,154,90,0.20)", fg: "#9BC178" },
 };
 
 function stockStatus(item) {
@@ -1756,17 +1763,17 @@ async function saveTicketStatus() {
   const previousLines = ticket.lines.map(l => ({ ...l }));
   ticket.status = newStatus;
 
-  if (newStatus === "Fulfilled") {
-    ticket.lines.forEach(l => l.pending = false);
-  } else if (newStatus === "Submitted" || newStatus === "Approved") {
-    ticket.lines.forEach(l => l.pending = true);
-  } else if (newStatus === "Partial") {
-    const checkboxes = document.querySelectorAll("#modalItemsList input[type='checkbox']");
-    checkboxes.forEach(cb => {
-      const idx = parseInt(cb.dataset.lineIdx, 10);
-      ticket.lines[idx].pending = !cb.checked;
-    });
-  }
+  if (newStatus === "Fulfilled" || newStatus === "Declined") {
+  ticket.lines.forEach(l => l.pending = false);
+} else if (newStatus === "Submitted" || newStatus === "Approved") {
+  ticket.lines.forEach(l => l.pending = true);
+} else if (newStatus === "Partial") {
+  const checkboxes = document.querySelectorAll("#modalItemsList input[type='checkbox']");
+  checkboxes.forEach(cb => {
+    const idx = parseInt(cb.dataset.lineIdx, 10);
+    ticket.lines[idx].pending = !cb.checked;
+  });
+}
 
   if (ticket.dbId) {
     const modalSaveBtn = document.getElementById("modalSaveBtn");
