@@ -220,7 +220,7 @@
   <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; box-sizing: border-box; border-bottom: 1px solid #ffffff; background-color: #eb5c24;">
     <!-- Logo / Brand on the left -->
     <div style="display: flex; align-items: center; width: 120px;">
-      <span class="brand-mark"></span>
+      <span class="brand-mark">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
       </span>
       <!-- <img src="logo.png" alt="Logo" style="height: 32px; width: auto;" /> -->
@@ -1389,6 +1389,7 @@ function renderStationChips() {
         station = btn.dataset.station;
         renderStationChips();
         autoSelectRecipientForStation();
+        renderItemPicker();
         renderPreview();
       });
     });
@@ -1540,10 +1541,13 @@ function renderItemPickerFor(pickerId, addBtnId, currentCart) {
   if (!picker || !addBtn) return;
 
   const previousValue = picker.value;
-  const available = ITEMS.filter(i => !currentCart.some(l => l.id === i.id));
+  const available = ITEMS.filter(i => 
+    !currentCart.some(l => l.id === i.id) &&
+    (station === "All" || i.category === station)
+  );
 
   if (available.length === 0) {
-    picker.innerHTML = `<option value="">All items added</option>`;
+    picker.innerHTML = `<option value="">No items available for ${escapeHtml(station)}</option>`;
     picker.disabled = true;
     addBtn.disabled = true;
     return;
@@ -1698,7 +1702,7 @@ function renderTickets() {
             if (t.status === "Partial") {
               tag = l.pending ? `<span class="pending-tag">Pending</span>` : `<span class="fulfilled-tag">Fulfilled</span>`;
             }
-            return `<div class="ticket-line"><span>${escapeHtml(l.name)}${tag}</span><span>${l.qty} ${escapeHtml(l.unit)}</span></div>`;
+            return `<div class="ticket-line"><span>${escapeHtml(l.name)}${tag}</span><span>${l.qty}${escapeHtml(l.unit)}</span></div>`;
           }).join("")}
         </div>
         <div class="ticket-foot">Needed ${escapeHtml(t.neededBy)}</div>
