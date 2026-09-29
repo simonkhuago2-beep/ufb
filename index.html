@@ -157,6 +157,7 @@
   .ticket-head { display: flex; justify-content: space-between; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #6B6150; border-bottom: 1px dashed var(--paper-line); padding: 8px 0 8px; margin-top: 6px; }
   .ticket-recipient { font-size: 11px; color: #6B6150; border-bottom: 1px dashed var(--paper-line); padding: 6px 0; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; }
   .ticket-recipient strong { color: #2A2620; }
+  .ticket-type-badge { font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px; color: #4A4235; display: inline-block; margin-top: 4px; text-transform: uppercase; }
   .ticket-lines { display: flex; flex-direction: column; gap: 5px; padding: 10px 0; }
   .ticket-line { display: flex; justify-content: space-between; font-size: 13px; gap: 8px; }
   .ticket-empty { font-size: 12px; color: #8B8265; text-align: center; padding: 10px 0; }
@@ -218,32 +219,21 @@
 </head>
 <body>
   <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; box-sizing: border-box; border-bottom: 1px solid #ffffff; background-color: #eb5c24;">
-    <!-- Logo / Brand on the left -->
     <div style="display: flex; align-items: center; width: 120px;">
       <span class="brand-mark">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
       </span>
-      <!-- <img src="logo.png" alt="Logo" style="height: 32px; width: auto;" /> -->
     </div>
   
-    <!-- Main Header Title centered -->
     <h1 style="margin: 0; font-size: 1.25rem; font-weight: 600; text-align: center; flex: 1;">
       Purchases & Requisition
     </h1>
   
-    <!-- Spacer to keep the title perfectly centered -->
     <div style="width: 120px;"></div>
   </header>
 
 <div class="app">
   <aside class="sidebar">
-    <!-- <div class="brand">
-      <span class="brand-mark">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
-      </span>
-      <span class="brand-name">Requisitions</span>
-    </div> -->
-
     <button class="nav-item is-active" data-view="dashboard">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <span>Par levels</span>
@@ -603,6 +593,9 @@
         <p class="subtitle">Requisitions submitted by your kitchen. Click any ticket to update its status.</p>
       </div>
       <div class="panel">
+        <div class="panel-head">
+          <div class="chip-row" id="historyTabs"></div>
+        </div>
         <div class="alert-banner amber" id="reminderBanner" style="display:none;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span id="reminderText"></span>
@@ -822,6 +815,22 @@ const STATIONS = ["Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packa
 const CATEGORIES = ["All", "Proteins", "Bar", "Spices", "Dry Items", "Vegetables", "Packaging"];
 const ITEM_CATEGORIES = CATEGORIES.filter(c => c !== "All");
 const CSV_COLUMNS = ["name", "category", "unit", "current", "par", "reorder", "supplier"];
+
+/* HISTORY TAB CONSTANTS */
+const HISTORY_TYPES = ["All", "Purchase Request", "Shop Requisition", "Department Requisition", "Supplier Request"];
+let activeHistoryTab = "All";
+
+/* MAP SHORTCODES/TYPES TO HUMAN-READABLE TYPE NAMES */
+function normalizeRequestType(type, ticketId) {
+  if (type) {
+    const lower = type.toLowerCase();
+    if (lower.includes("purchase")) return "Purchase Request";
+    if (lower.includes("shop")) return "Shop Requisition";
+    if (lower.includes("dept") || lower.includes("department")) return "Department Requisition";
+    if (lower.includes("supplier")) return "Supplier Request";
+  }
+  return "Purchase Request";
+}
 
 /* ---------------- email dispatch helper ---------------- */
 
@@ -1308,19 +1317,19 @@ async function fetchInventoryItems() {
 
 let tickets = [
   {
-    id: "REQ-1041", station: "Proteins", recipient: "Marcus T.", neededBy: "Aug 23, 2026", status: "Fulfilled",
+    id: "REQ-1041", station: "Proteins", recipient: "Marcus T.", neededBy: "Aug 23, 2026", status: "Fulfilled", requestType: "Purchase Request",
     lines: [ { name: "Chicken breast", qty: 40, unit: "lb", pending: false }, { name: "Atlantic salmon", qty: 20, unit: "lb", pending: false } ],
   },
   {
-    id: "REQ-1040", station: "Dry Items", recipient: "Dana R.", neededBy: "Aug 22, 2026", status: "Approved",
+    id: "REQ-1040", station: "Dry Items", recipient: "Dana R.", neededBy: "Aug 22, 2026", status: "Approved", requestType: "Department Requisition",
     lines: [ { name: "All-purpose flour", qty: 40, unit: "lb", pending: true }, { name: "Jasmine rice", qty: 50, unit: "lb", pending: true }, { name: "Kosher salt", qty: 5, unit: "lb", pending: true } ],
   },
   {
-    id: "REQ-1039", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Partial",
+    id: "REQ-1039", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Partial", requestType: "Shop Requisition",
     lines: [ { name: "House red wine", qty: 12, unit: "btl", pending: false }, { name: "Sparkling water", qty: 10, unit: "case", pending: true } ],
   },
   {
-    id: "REQ-1042", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Declined",
+    id: "REQ-1042", station: "Bar", recipient: "Carlos M.", neededBy: "Aug 21, 2026", status: "Declined", requestType: "Supplier Request",
     lines: [ { name: "House red wine", qty: 12, unit: "btl", pending: false }, { name: "Sparkling water", qty: 10, unit: "case", pending: true } ],
   },
 ];
@@ -1376,6 +1385,21 @@ function renderCategoryChips() {
   ).join("");
   el.querySelectorAll("[data-cat]").forEach(btn => {
     btn.addEventListener("click", () => { category = btn.dataset.cat; renderDashboard(); });
+  });
+}
+
+function renderHistoryTabs() {
+  const el = document.getElementById("historyTabs");
+  if (!el) return;
+  el.innerHTML = HISTORY_TYPES.map(t =>
+    `<button class="cat-chip ${t === activeHistoryTab ? "is-selected" : ""}" data-htab="${t}">${t}</button>`
+  ).join("");
+  el.querySelectorAll("[data-htab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeHistoryTab = btn.dataset.htab;
+      renderHistoryTabs();
+      renderTickets();
+    });
   });
 }
 
@@ -1684,7 +1708,18 @@ function renderPreview() {
 function renderTickets() {
   const grid = document.getElementById("ticketGrid");
   if (!grid) return;
-  grid.innerHTML = tickets.map(t => {
+
+  const filteredTickets = tickets.filter(t => 
+    activeHistoryTab === "All" || t.requestType === activeHistoryTab
+  );
+
+  if (filteredTickets.length === 0) {
+    grid.innerHTML = `<div class="empty">No requisitions found under ${escapeHtml(activeHistoryTab)}.</div>`;
+    checkPendingReminders(filteredTickets);
+    return;
+  }
+
+  grid.innerHTML = filteredTickets.map(t => {
     const c = TICKET_STATUS_COLORS[t.status] || TICKET_STATUS_COLORS.Submitted;
     return `
       <div class="ticket-card" onclick="openStatusModal('${t.id}')">
@@ -1693,6 +1728,7 @@ function renderTickets() {
           <div>
             <div class="ticket-card-id">${t.id}</div>
             <div class="ticket-card-meta">${escapeHtml(t.station)} · Recipient: ${escapeHtml(t.recipient || "N/A")}</div>
+            <div class="ticket-type-badge">${escapeHtml(t.requestType || "Purchase Request")}</div>
           </div>
           <span class="status-pill" style="background:${c.bg};color:${c.fg}">${t.status}</span>
         </div>
@@ -1710,12 +1746,12 @@ function renderTickets() {
     `;
   }).join("");
 
-  checkPendingReminders();
+  checkPendingReminders(filteredTickets);
 }
 
-function checkPendingReminders() {
+function checkPendingReminders(activeTickets = tickets) {
   const pendingSummary = [];
-  tickets.forEach(t => {
+  activeTickets.forEach(t => {
     if (t.status !== "Fulfilled") {
       t.lines.forEach(l => {
         if (l.pending) {
@@ -1785,16 +1821,16 @@ async function saveTicketStatus() {
   ticket.status = newStatus;
 
   if (newStatus === "Fulfilled" || newStatus === "Declined") {
-  ticket.lines.forEach(l => l.pending = false);
-} else if (newStatus === "Submitted" || newStatus === "Approved") {
-  ticket.lines.forEach(l => l.pending = true);
-} else if (newStatus === "Partial") {
-  const checkboxes = document.querySelectorAll("#modalItemsList input[type='checkbox']");
-  checkboxes.forEach(cb => {
-    const idx = parseInt(cb.dataset.lineIdx, 10);
-    ticket.lines[idx].pending = !cb.checked;
-  });
-}
+    ticket.lines.forEach(l => l.pending = false);
+  } else if (newStatus === "Submitted" || newStatus === "Approved") {
+    ticket.lines.forEach(l => l.pending = true);
+  } else if (newStatus === "Partial") {
+    const checkboxes = document.querySelectorAll("#modalItemsList input[type='checkbox']");
+    checkboxes.forEach(cb => {
+      const idx = parseInt(cb.dataset.lineIdx, 10);
+      ticket.lines[idx].pending = !cb.checked;
+    });
+  }
 
   if (ticket.dbId) {
     const modalSaveBtn = document.getElementById("modalSaveBtn");
@@ -1888,9 +1924,10 @@ async function submitRequisitionGeneric(type = "") {
   const label = document.getElementById("submitReqLabel" + suffix);
 
   let currentCart = cart;
-  if (type === "shop") currentCart = cartShop;
-  if (type === "dept") currentCart = cartDept;
-  if (type === "req") currentCart = cartReq;
+  let reqTypeName = "Purchase Request";
+  if (type === "shop") { currentCart = cartShop; reqTypeName = "Shop Requisition"; }
+  if (type === "dept") { currentCart = cartDept; reqTypeName = "Department Requisition"; }
+  if (type === "req") { currentCart = cartReq; reqTypeName = "Supplier Request"; }
 
   errorEl.classList.remove("is-visible");
 
@@ -1936,6 +1973,7 @@ async function submitRequisitionGeneric(type = "") {
     needed_by: neededBy,
     items: lines,
     status: "Submitted",
+    request_type: reqTypeName
   };
 
   const { data, error } = await supabaseClient
@@ -1961,6 +1999,7 @@ async function submitRequisitionGeneric(type = "") {
     recipient,
     neededBy: formattedDate,
     status: "Submitted",
+    requestType: reqTypeName,
     lines,
   });
 
@@ -2010,6 +2049,7 @@ async function fetchRequisitions() {
         ? new Date(row.needed_by + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
         : "—",
       status: row.status || "Submitted",
+      requestType: normalizeRequestType(row.request_type, row.ticket_number || row.id),
       lines: Array.isArray(row.items) ? row.items : [],
     }));
   }
@@ -2019,6 +2059,7 @@ async function fetchRequisitions() {
 
 async function initApp() {
   renderCategoryChips();
+  renderHistoryTabs();
   renderStationChips();
   renderItemCategorySelect();
   renderRecipientAndSupplierSelects();
@@ -2125,6 +2166,7 @@ document.getElementById("modalStatusSelect").addEventListener("change", toggleMo
 document.getElementById("modalCancelBtn").addEventListener("click", closeModal);
 document.getElementById("modalSaveBtn").addEventListener("click", saveTicketStatus);
 
+// Initialize application
 initApp();
 </script>
 </body>
