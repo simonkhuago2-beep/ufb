@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urban Flame BBQ | Daily Manager Portal</title>
+<style>
+:root{--ink:#252321;--muted:#6b625d;--brand:#9b3d1e;--brand2:#d9783d;--paper:#fffaf6;--line:#eadbd1;--ok:#24734b}
+*{box-sizing:border-box}body{margin:0;background:#f5eee8;color:var(--ink);font:15px/1.45 Arial,sans-serif}
+header{background:linear-gradient(120deg,#522415,#a84b25);color:white;padding:24px max(18px,calc((100% - 1100px)/2))}
+header h1{margin:0;font-size:25px;letter-spacing:.5px}header p{margin:5px 0 0;color:#f5ddd0}
+main{max-width:1100px;margin:22px auto;padding:0 16px}.card{background:white;border:1px solid var(--line);border-radius:13px;padding:18px;margin-bottom:16px;box-shadow:0 3px 14px #4b29100b}
+h2{font-size:18px;margin:0 0 13px;color:#74351e}h3{font-size:15px;margin:18px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:700;color:#544941}input,select,textarea{width:100%;padding:10px;border:1px solid #d8c8bd;border-radius:8px;margin-top:5px;font:inherit;background:#fff}
+textarea{min-height:78px;resize:vertical}.task{display:flex;gap:10px;align-items:flex-start;padding:9px 4px;border-bottom:1px solid #f0e8e2;font-size:14px}.task:last-child{border:0}.task input{width:18px;height:18px;margin:1px 0 0;flex:none;accent-color:var(--brand)}
+.task span{flex:1}.task small{display:block;color:var(--muted);font-size:11px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:0;border-radius:8px;padding:10px 14px;background:var(--brand);color:white;font-weight:700;cursor:pointer}.btn.secondary{background:#eee4dd;color:#4b3024}.btn.green{background:var(--ok)}.btn.danger{background:#8b2929}
+.progress{height:9px;background:#eee5df;border-radius:20px;overflow:hidden;margin:10px 0}.progress div{height:100%;background:var(--ok);width:0}
+table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:8px;border:1px solid var(--line);text-align:left;font-size:12px}th{background:#f8e8dc}td input{min-width:65px;padding:6px;margin:0}
+.tablewrap{overflow-x:auto}.muted{color:var(--muted);font-size:12px}.status{font-weight:700;color:var(--ok)}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:10px 16px 28px}
+@media print{body{background:white}.no-print,header .hint{display:none!important}.card{box-shadow:none;break-inside:avoid}main{max-width:none;margin:0}.task{padding:5px}}
+</style>
+</head>
+<body>
+<header><h1>URBAN FLAME BBQ</h1><p>Daily Manager Operations Portal</p><p class="hint">Record opening, service, closing, stock and handover checks.</p></header>
+<main>
+<section class="card">
+<h2>Daily shift record</h2>
+<div class="grid">
+<label>Date<input type="date" id="date"></label>
+<label>Manager on duty<input id="manager" placeholder="Manager name"></label>
+<label>Shift<select id="shift"><option>Full day</option><option>Opening</option><option>Closing</option></select></label>
+<label>Kitchen lead<input id="kitchenLead" placeholder="Kitchen lead"></label>
+</div>
+<p class="muted">Entries are saved automatically in this browser on this device. Export a backup at the end of the shift. This standalone portal does not send data to a central server.</p>
+</section>
+<div id="sections"></div>
+<section class="card">
+<h2>Inventory count & reconciliation</h2>
+<div class="muted">Use a consistent unit for each item (kg, litres, packs, bottles or portions).</div>
+<div class="tablewrap"><table id="stock"><thead><tr><th>Item</th><th>Unit</th><th>Opening</th><th>Received</th><th>Used / issued</th><th>Wasted</th><th>Expected close</th><th>Actual close</th><th>Variance</th></tr></thead><tbody></tbody></table></div>
+</section>
+<section class="card">
+<h2>Sales & cash reconciliation</h2>
+<div class="grid">
+<label>Total POS sales<input data-field="totalSales" type="number" step="0.01"></label>
+<label>Cash sales<input data-field="cashSales" type="number" step="0.01"></label>
+<label>Card sales<input data-field="cardSales" type="number" step="0.01"></label>
+<label>Mobile money sales<input data-field="mobileSales" type="number" step="0.01"></label>
+<label>Other payment method<input data-field="otherSales" type="number" step="0.01"></label>
+<label>Opening cash float<input data-field="openingFloat" type="number" step="0.01"></label>
+<label>Closing cash counted<input data-field="closingCash" type="number" step="0.01"></label>
+<label>Expected closing cash<input data-field="expectedCash" type="number" step="0.01"></label>
+<label>Cash over / short<input data-field="cashVariance" type="number" step="0.01"></label>
+</div>
+<label style="margin-top:12px">Voids, refunds, discounts and complimentary items reviewed?<select data-field="adjustmentsReviewed"><option value="">Select</option><option>Yes</option><option>No</option><option>N/A</option></select></label>
+<label style="margin-top:12px">Explanation / reference<textarea data-field="cashNotes"></textarea></label>
+</section>
+<section class="card">
+<h2>Wastage, incidents & manager handover</h2>
+<div class="grid">
+<label>Food wastage (item, qty, reason, value)<textarea data-field="wasteNotes"></textarea></label>
+<label>Customer complaints / incidents and action<textarea data-field="incidentNotes"></textarea></label>
+<label>Equipment faults / maintenance / safety issues<textarea data-field="equipmentNotes"></textarea></label>
+<label>Stock variances and corrective action<textarea data-field="varianceNotes"></textarea></label>
+<label>Items to order / follow up tomorrow<textarea data-field="followupNotes"></textarea></label>
+<label>Other notes / next-shift handover<textarea data-field="handoverNotes"></textarea></label>
+</div>
+</section>
+<section class="card">
+<h2>Manager sign-off</h2>
+<div class="grid">
+<label>Opening manager signature / initials<input data-field="openingSignoff"></label>
+<label>Opening sign-off time<input data-field="openingTime" type="time"></label>
+<label>Closing manager signature / initials<input data-field="closingSignoff"></label>
+<label>Closing sign-off time<input data-field="closingTime" type="time"></label>
+<label>Kitchen lead verification<input data-field="kitchenSignoff"></label>
+<label>Management review<input data-field="managementReview"></label>
+</div>
+<p class="muted">Sign-off confirms the manager has checked the entries, recorded exceptions and escalated unresolved safety, security, cash or stock issues.</p>
+</section>
+<section class="card no-print">
+<h2>Save, export & review</h2>
+<div class="actions">
+<button class="btn green" id="save">Save today's record</button>
+<button class="btn" id="exportJson">Export record (JSON)</button>
+<button class="btn" id="exportCsv">Export checklist & stock (CSV)</button>
+<button class="btn secondary" id="print">Print / Save as PDF</button>
+<button class="btn secondary" id="history">Show saved dates</button>
+<button class="btn danger" id="clear">Clear current form</button>
+</div>
+<div id="message" class="muted" style="margin-top:10px" aria-live="polite"></div>
+<div id="historyList" class="muted"></div>
+</section>
+</main>
+<footer>Urban Flame BBQ • Manager daily control record • Follow approved food-safety, fire-safety and security procedures.</footer>
+<script>
+const groups = [
+["Opening – General management & premises",[
+"Arrive, clock in and review previous shift handover","Inspect premises for damage, security concerns or unusual activity","Check water, electricity, ventilation and backup systems","Check emergency exits are clear and fire equipment is accessible","Confirm staff attendance, uniform, grooming and hygiene","Conduct pre-shift briefing; communicate targets, bookings and special requests","Assign FOH, kitchen, cleaning and stock responsibilities","Review menu availability, expected demand and operational priorities"]],
+["Opening – Front of House",[
+"Sweep and mop guest areas; clean and sanitise tables and chairs","Clean entrance, doors, windows and visible surfaces","Set tables with clean cutlery, napkins and approved condiments","Check menus are clean, current and reflect correct prices and availability","Clean and stock waiter/service stations","Clean and restock customer toilets, handwashing and waste stations","Check lighting, music, ventilation and room temperature","Test POS, printers, order routing and payment terminals","Count and record opening cash float; obtain required verification","Check takeaway/delivery station and packaging supplies"]],
+["Opening – Kitchen & food safety",[
+"Confirm kitchen staff attendance, protective clothing and hand hygiene","Clean and sanitise food-contact surfaces, sinks and preparation stations","Record refrigerator and freezer temperatures; act on out-of-range readings","Inspect stored food, labels, dates, packaging and FIFO/FEFO rotation","Separate raw and ready-to-eat foods; verify suitable utensils and boards","Check handwashing supplies, sanitiser and cleaning materials","Inspect BBQ, grills, ovens, fryers, burners and extraction equipment","Check cooking thermometers and essential small equipment","Check fuel supplies and equipment condition; report faults before use","Review prep plan and expected demand with kitchen lead","Prepare and portion proteins to approved recipe and portion specifications","Prepare marinades, rubs, sauces, sides, vegetables and garnishes","Label and date prepared foods; maintain safe storage and separation","Check quality and readiness; tell FOH about unavailable menu items"]],
+["Opening – Inventory & receiving",[
+"Review previous closing stock report and current par levels","Physically verify key proteins and high-value ingredients","Check produce, dry goods, sauces, oils, spices and beverages","Check charcoal/gas or other approved fuel and packaging supplies","Identify low stock, expired/damaged goods and urgent replenishment needs","Prepare and authorise purchase requisitions for items below par","Verify expected deliveries and supplier documentation"]],
+["Service-time manager controls",[
+"Monitor guest greeting, service pace, order accuracy and table presentation","Monitor complaints and record resolution or escalation","Check washrooms and guest areas periodically","Verify food presentation, BBQ consistency and portion control","Monitor food preparation, holding controls and safe handling","Keep kitchen, service stations and floors clean during service","Record stock received, stock issued, staff meals, comps and wastage","Monitor high-value proteins and investigate unusual consumption","Communicate sold-out items and delays between kitchen and FOH","Report equipment faults, safety concerns and staffing gaps"]],
+["Closing – Front of House, POS & cash",[
+"Confirm guests have been served and all orders/bills are settled","Clear dishes; clean and sanitise tables, chairs and service stations","Sweep and mop dining areas; clean entrance and visible surfaces","Clean toilets; restock soap, tissue and hand-drying supplies","Empty bins, replace liners and move waste to approved collection point","Reset tables and store menus, condiments and service materials","Close all POS orders; review voids, discounts, refunds and comps","Reconcile cash, card and mobile-money totals against POS/payment reports","Record cash overage/shortage and explain discrepancies","Secure cash and reports according to company policy","Secure payment terminals, devices and FOH equipment"]],
+["Closing – Kitchen & food safety",[
+"Review remaining prepared food; retain only food meeting approved safety rules","Cool, cover, label and store retained food using approved procedures","Discard food outside approved time/temperature or quality limits; record waste","Separate raw and cooked/ready-to-eat food in suitable storage","Record refrigerator and freezer closing temperatures","Clean and sanitise food-contact surfaces, utensils, boards and sinks","Clean BBQ/grills, ovens, fryers and equipment following safe shutdown instructions","Clean floors, drains, extraction areas and waste stations as scheduled","Store knives and equipment safely; store chemicals away from food","Report equipment defects, pest evidence or maintenance needs","Shut down cooking equipment and fuel systems using approved procedures","Keep refrigeration and other equipment requiring continuous power operating","Confirm fire equipment and emergency exits remain accessible"]],
+["Closing – Inventory & stock reconciliation",[
+"Count remaining proteins, cuts, poultry, seafood and prepared BBQ items","Count sauces, marinades, produce, dry goods, oils, spices and beverages","Count fuel, packaging and other critical consumables","Record all receipts, transfers/issues, staff meals, comps and wastage","Calculate expected closing stock and compare with physical count","Investigate and document material stock variances","Identify expired, damaged or spoiled stock and record disposal","Prepare next-day purchase requisition based on par levels and forecast","Update stock records and submit closing inventory report"]],
+["Closing – Security & lock-up",[
+"Check kitchen, dining room, storage, toilets and staff areas are clear","Confirm all staff and visitors have left and signed out","Check food is stored safely and refrigeration remains on","Confirm gas/cooking equipment is shut down as required","Switch off non-essential electrical equipment","Check windows, doors and access points; secure keys","Confirm CCTV/security systems are operating and set alarm if applicable","Lock premises and report any unresolved security concern"]]
+];
+const stockItems=["Beef","Chicken","Pork","Sausages","Fish / seafood","BBQ sauce","Vegetables","Rice / dry goods","Cooking oil","Beverages","Charcoal / fuel","Packaging"];
+const key='ufbbq_manager_portal_v1';
+const $=id=>document.getElementById(id);
+const today=new Date(); $('date').value=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+function build(){
+ const root=$('sections');
+ groups.forEach((g,gi)=>{
+  const card=document.createElement('section');card.className='card';
+  const h=document.createElement('h2');h.textContent=g[0];card.appendChild(h);
+  const bar=document.createElement('div');bar.className='progress';const fill=document.createElement('div');fill.id='p'+gi;bar.appendChild(fill);card.appendChild(bar);
+  const count=document.createElement('div');count.className='muted';count.id='c'+gi;card.appendChild(count);
+  g[1].forEach((task,ti)=>{
+   const row=document.createElement('label');row.className='task';
+   const cb=document.createElement('input');cb.type='checkbox';cb.dataset.task=gi+'_'+ti;
+   const span=document.createElement('span');span.textContent=task;
+   const note=document.createElement('input');note.placeholder='Notes / initials';note.style.maxWidth='180px';note.dataset.note=gi+'_'+ti;note.setAttribute('aria-label','Notes for '+task);
+   row.append(cb,span,note);card.appendChild(row);
+   cb.addEventListener('change',()=>{updateProgress();autosave()});note.addEventListener('input',autosave);
+  });
+  root.appendChild(card);
+ });
+ const body=$('stock').querySelector('tbody');
+ stockItems.forEach((item,i)=>{
+  const tr=document.createElement('tr');tr.innerHTML='<td>'+item+'</td>'+['unit','opening','received','used','wasted','expected','actual','variance'].map((x)=>'<td><input data-stock="'+i+'_'+x+'" aria-label="'+item+' '+x+'"></td>').join('');
+  body.appendChild(tr);tr.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{calcStock(i);autosave()}));
+ });
+ document.querySelectorAll('[data-field],#date,#manager,#shift,#kitchenLead').forEach(el=>el.addEventListener('input',autosave));
+}
+function updateProgress(){groups.forEach((g,i)=>{let n=g[1].length,done=g[1].filter((_,j)=>document.querySelector('[data-task="'+i+'_'+j+'"]').checked).length;$('p'+i).style.width=(done/n*100)+'%';$('c'+i).textContent=done+' of '+n+' completed';});}
+function calcStock(i){
+ const val=k=>parseFloat(document.querySelector('[data-stock="'+i+'_'+k+'"]').value)||0;
+ const expected=val('opening')+val('received')-val('used')-val('wasted');
+ document.querySelector('[data-stock="'+i+'_expected"]').value=expected.toFixed(2);
+ const actual=document.querySelector('[data-stock="'+i+'_actual"]').value;
+ document.querySelector('[data-stock="'+i+'_variance"]').value=actual===''?'':(parseFloat(actual)-expected).toFixed(2);
+}
+function collect(){
+ const data={date:$('date').value,manager:$('manager').value,shift:$('shift').value,kitchenLead:$('kitchenLead').value,fields:{},tasks:{},stock:[]};
+ document.querySelectorAll('[data-field]').forEach(e=>data.fields[e.dataset.field]=e.value);
+ document.querySelectorAll('[data-task]').forEach(e=>data.tasks[e.dataset.task]={done:e.checked,note:document.querySelector('[data-note="'+e.dataset.task+'"]').value});
+ stockItems.forEach((item,i)=>{let row={item};['unit','opening','received','used','wasted','expected','actual','variance'].forEach(k=>row[k]=document.querySelector('[data-stock="'+i+'_'+k+'"]').value);data.stock.push(row)});
+ return data;
+}
+function apply(d){
+ if(!d)return;
+ $('date').value=d.date||$('date').value;$('manager').value=d.manager||'';$('shift').value=d.shift||'Full day';$('kitchenLead').value=d.kitchenLead||'';
+ Object.entries(d.fields||{}).forEach(([k,v])=>{let e=document.querySelector('[data-field="'+k+'"]');if(e)e.value=v});
+ Object.entries(d.tasks||{}).forEach(([k,v])=>{let c=document.querySelector('[data-task="'+k+'"]'),n=document.querySelector('[data-note="'+k+'"]');if(c)c.checked=!!v.done;if(n)n.value=v.note||''});
+ (d.stock||[]).forEach((r,i)=>['unit','opening','received','used','wasted','expected','actual','variance'].forEach(k=>{let e=document.querySelector('[data-stock="'+i+'_'+k+'"]');if(e)e.value=r[k]||''}));
+ updateProgress();
+}
+function all(){try{return JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}}}
+function save(){const d=collect(),records=all();records[d.date]=d;localStorage.setItem(key,JSON.stringify(records));$('message').textContent='Saved locally for '+d.date+' at '+new Date().toLocaleTimeString()+'. Export a backup to keep a separate copy.';}
+let timer;function autosave(){clearTimeout(timer);timer=setTimeout(save,500)}
+function download(name,content,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+$('save').onclick=save;
+$('exportJson').onclick=()=>{save();let d=collect();download('urban-flame-bbq-'+d.date+'.json',JSON.stringify(d,null,2),'application/json')};
+$('exportCsv').onclick=()=>{
+ const d=collect(),rows=[['Section','Task / item','Status / unit','Value / notes']];
+ groups.forEach((g,i)=>g[1].forEach((task,j)=>{let x=d.tasks[i+'_'+j];rows.push([g[0],task,x.done?'Complete':'Not complete',x.note])}));
+ d.stock.forEach(r=>rows.push(['Inventory',r.item,r.unit,JSON.stringify(r)]));
+ Object.entries(d.fields).forEach(([k,v])=>rows.push(['Manager report',k,'',v]));
+ const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ download('urban-flame-bbq-'+d.date+'.csv',csv,'text/csv;charset=utf-8');
+};
+$('print').onclick=()=>window.print();
+$('history').onclick=()=>{let dates=Object.keys(all()).sort().reverse();$('historyList').innerHTML=dates.length?'<p><b>Saved dates:</b> '+dates.map(d=>'<button class="btn secondary" data-load="'+d+'" style="margin:3px">'+d+'</button>').join('')+'</p>':'No saved records yet.';document.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{let d=all()[b.dataset.load];apply(d);$('message').textContent='Loaded saved record for '+b.dataset.load+'.'});};
+$('clear').onclick=()=>{if(confirm('Clear all fields in the current form? This does not delete previously saved dates.')){document.querySelectorAll('[data-task]').forEach(e=>e.checked=false);document.querySelectorAll('[data-note],[data-field],#manager,#kitchenLead').forEach(e=>e.value='');document.querySelectorAll('#stock input').forEach(e=>e.value='');updateProgress();$('message').textContent='Current form cleared. Previously saved dates are unchanged.';}};
+build();updateProgress();const records=all();if(records[$('date').value])apply(records[$('date').value]);
+</script>
+</body></html>
